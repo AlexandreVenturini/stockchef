@@ -4,6 +4,7 @@ import 'package:flutter/services.dart';
 import '../../core/format.dart';
 import '../../core/theme.dart';
 import '../../core/units.dart';
+import '../../core/widgets/form_section.dart';
 import '../ingredients/ingredient.dart';
 import '../preparations/preparation_repository.dart';
 import 'recipe.dart';
@@ -308,63 +309,78 @@ class _RecipeFormPageState extends State<RecipeFormPage> {
             child: ListView(
               padding: const EdgeInsets.all(AppSpacing.md),
               children: [
-                TextFormField(
-                  controller: _nameController,
-                  textCapitalization: TextCapitalization.sentences,
-                  decoration: InputDecoration(
-                    labelText: _isPreparation
-                        ? 'Nome do preparo'
-                        : 'Nome da receita',
-                  ),
-                  validator: (text) => (text ?? '').trim().isEmpty
-                      ? (_isPreparation
-                            ? 'Informe o nome do preparo'
-                            : 'Informe o nome da receita')
-                      : null,
-                ),
-                const SizedBox(height: AppSpacing.md),
-                Row(
-                  crossAxisAlignment: CrossAxisAlignment.start,
+                FormSection(
+                  title: 'Dados do $_kind',
                   children: [
-                    Expanded(
-                      child: TextFormField(
-                        controller: _yieldController,
-                        keyboardType: const TextInputType.numberWithOptions(
-                          decimal: true,
+                    TextFormField(
+                      controller: _nameController,
+                      textCapitalization: TextCapitalization.sentences,
+                      decoration: InputDecoration(
+                        labelText: _isPreparation
+                            ? 'Nome do preparo'
+                            : 'Nome da receita',
+                        prefixIcon: FieldIcon(
+                          _isPreparation
+                              ? Icons.blender_outlined
+                              : Icons.menu_book_outlined,
                         ),
-                        inputFormatters: _numberFormatters,
-                        decoration: const InputDecoration(
-                          labelText: 'Rendimento',
-                        ),
-                        validator: (text) =>
-                            _validateQuantity(text, _yieldUnit),
                       ),
+                      validator: (text) => (text ?? '').trim().isEmpty
+                          ? (_isPreparation
+                                ? 'Informe o nome do preparo'
+                                : 'Informe o nome da receita')
+                          : null,
                     ),
-                    const SizedBox(width: AppSpacing.sm),
-                    SizedBox(
-                      width: 110,
-                      child: DropdownButtonFormField<Unit>(
-                        initialValue: _yieldUnit,
-                        decoration: const InputDecoration(labelText: 'Unidade'),
-                        items: [
-                          for (final unit in _yieldUnits)
-                            DropdownMenuItem(
-                              value: unit,
-                              child: Text(unit.label),
+                    const SizedBox(height: AppSpacing.md),
+                    Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Expanded(
+                          child: TextFormField(
+                            controller: _yieldController,
+                            keyboardType: const TextInputType.numberWithOptions(
+                              decimal: true,
                             ),
-                        ],
-                        onChanged: (unit) {
-                          if (unit != null) setState(() => _yieldUnit = unit);
-                        },
-                      ),
+                            inputFormatters: _numberFormatters,
+                            decoration: const InputDecoration(
+                              labelText: 'Rendimento',
+                              prefixIcon: FieldIcon(Icons.scale_outlined),
+                            ),
+                            validator: (text) =>
+                                _validateQuantity(text, _yieldUnit),
+                          ),
+                        ),
+                        const SizedBox(width: AppSpacing.sm),
+                        SizedBox(
+                          width: 110,
+                          child: DropdownButtonFormField<Unit>(
+                            initialValue: _yieldUnit,
+                            decoration: const InputDecoration(
+                              labelText: 'Unidade',
+                            ),
+                            items: [
+                              for (final unit in _yieldUnits)
+                                DropdownMenuItem(
+                                  value: unit,
+                                  child: Text(unit.label),
+                                ),
+                            ],
+                            onChanged: (unit) {
+                              if (unit != null) {
+                                setState(() => _yieldUnit = unit);
+                              }
+                            },
+                          ),
+                        ),
+                      ],
                     ),
                   ],
                 ),
-                const SizedBox(height: AppSpacing.lg),
                 Text(
                   'Ingredientes',
                   style: theme.textTheme.titleSmall?.copyWith(
-                    color: theme.colorScheme.primary,
+                    color: AppColors.title,
+                    fontWeight: FontWeight.w700,
                   ),
                 ),
                 const SizedBox(height: AppSpacing.sm),
@@ -377,15 +393,12 @@ class _RecipeFormPageState extends State<RecipeFormPage> {
                       style: TextStyle(color: theme.colorScheme.error),
                     ),
                   ),
-                Align(
-                  alignment: Alignment.centerLeft,
-                  child: TextButton.icon(
-                    onPressed: _items.length >= _selectable(ingredients).length
-                        ? null
-                        : _addItem,
-                    icon: const Icon(Icons.add),
-                    label: const Text('Adicionar ingrediente'),
-                  ),
+                OutlinedButton.icon(
+                  onPressed: _items.length >= _selectable(ingredients).length
+                      ? null
+                      : _addItem,
+                  icon: const Icon(Icons.add),
+                  label: const Text('Adicionar ingrediente'),
                 ),
               ],
             ),
@@ -395,6 +408,9 @@ class _RecipeFormPageState extends State<RecipeFormPage> {
               padding: const EdgeInsets.all(AppSpacing.md),
               child: FilledButton(
                 onPressed: _saving ? null : _save,
+                style: FilledButton.styleFrom(
+                  minimumSize: const Size.fromHeight(AppSizes.buttonHeight),
+                ),
                 child: Text('Salvar $_kind'),
               ),
             ),
