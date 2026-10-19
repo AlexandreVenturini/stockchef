@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 
 import 'core/theme.dart';
+import 'features/dashboard/dashboard_page.dart';
 import 'features/ingredients/ingredients_page.dart';
 import 'features/preparations/preparations_page.dart';
 import 'features/production/production_history_page.dart';
@@ -35,6 +36,7 @@ class _HomePageState extends State<HomePage> {
   int _selectedIndex = 0;
 
   static const _pages = [
+    DashboardPage(),
     IngredientsPage(),
     PreparationsPage(),
     RecipesPage(),
@@ -51,6 +53,11 @@ class _HomePageState extends State<HomePage> {
           setState(() => _selectedIndex = index);
         },
         destinations: const [
+          NavigationDestination(
+            icon: Icon(Icons.home_outlined),
+            selectedIcon: Icon(Icons.home),
+            label: 'Início',
+          ),
           NavigationDestination(
             icon: Icon(Icons.inventory_2_outlined),
             selectedIcon: Icon(Icons.inventory_2),
