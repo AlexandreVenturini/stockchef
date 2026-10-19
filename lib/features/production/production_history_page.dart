@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../../core/format.dart';
 import '../../core/theme.dart';
+import '../../core/widgets/item_card.dart';
 import 'production.dart';
 import 'production_detail_page.dart';
 import 'production_form_page.dart';
@@ -87,12 +88,13 @@ class _ProductionHistoryPageState extends State<ProductionHistoryPage> {
               for (final day in days.entries) ...[
                 _DayHeader(day: day.key),
                 for (final production in day.value)
-                  ListTile(
-                    title: Text(production.recipeName),
-                    subtitle: Text(formatTime(production.createdAt)),
-                    trailing: Text(
-                      formatQuantity(production.quantity, production.unit),
-                      style: Theme.of(context).textTheme.titleMedium,
+                  ItemCard(
+                    icon: Icons.soup_kitchen_outlined,
+                    title: production.recipeName,
+                    subtitle: formatTime(production.createdAt),
+                    trailing: formatQuantity(
+                      production.quantity,
+                      production.unit,
                     ),
                     onTap: () => _openDetail(production),
                   ),

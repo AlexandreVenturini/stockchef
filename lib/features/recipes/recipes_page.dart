@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 
 import '../../core/format.dart';
+import '../../core/theme.dart';
+import '../../core/widgets/item_card.dart';
 import 'recipe.dart';
 import 'recipe_form_page.dart';
 import 'recipe_repository.dart';
@@ -57,19 +59,18 @@ class _RecipesPageState extends State<RecipesPage> {
           }
 
           return ListView.builder(
+            padding: const EdgeInsets.only(top: AppSpacing.xs, bottom: 88),
             itemCount: recipes.length,
             itemBuilder: (context, index) {
               final recipe = recipes[index];
               final count = recipe.items.length;
-              return ListTile(
-                title: Text(recipe.name),
-                subtitle: Text(
-                  '$count ${count == 1 ? 'ingrediente' : 'ingredientes'}',
-                ),
-                trailing: Text(
-                  'Rende ${formatQuantity(recipe.yieldQuantity, recipe.yieldUnit)}',
-                  style: Theme.of(context).textTheme.titleMedium,
-                ),
+              return ItemCard(
+                icon: Icons.menu_book_outlined,
+                title: recipe.name,
+                subtitle:
+                    '$count ${count == 1 ? 'ingrediente' : 'ingredientes'}',
+                trailing:
+                    'Rende ${formatQuantity(recipe.yieldQuantity, recipe.yieldUnit)}',
                 onTap: () => _openForm(recipe),
               );
             },
