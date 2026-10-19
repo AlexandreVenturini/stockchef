@@ -61,7 +61,7 @@ class IngredientRepository {
         throw ArgumentError('Unidade incompatível');
       }
       await txn.rawUpdate(
-        'UPDATE ingredients SET stock = stock + ? WHERE id = ?',
+        'UPDATE ingredients SET stock = ROUND(stock + ?, 3) WHERE id = ?',
         [unit.toBase(quantity), id],
       );
     });
