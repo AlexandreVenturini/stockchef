@@ -75,6 +75,8 @@ class _IngredientsPageState extends State<IngredientsPage> {
           return EmptyState(
             icon: Icons.inventory_2_outlined,
             title: 'Nenhum ingrediente cadastrado',
+            message:
+                'Cadastre os ingredientes com a quantidade que você tem hoje',
             actionLabel: 'Cadastrar primeiro ingrediente',
             onAction: _edit,
           );
@@ -105,31 +107,20 @@ class _IngredientsPageState extends State<IngredientsPage> {
                         itemCount: items.length,
                         itemBuilder: (context, index) {
                           final item = items[index];
-                          return Column(
-                            children: [
-                              ItemCard(
-                                icon: Icons.inventory_2_outlined,
-                                title: item.name,
-                                subtitle: item.brand,
-                                trailing: formatQuantity(item.stock, item.unit),
-                                alert: item.isOutOfStock,
-                                warning: item.isLowStock,
-                                badge: item.isOutOfStock
-                                    ? 'Sem estoque'
-                                    : (item.isLowStock
-                                          ? 'Estoque baixo'
-                                          : null),
-                                onTap: () => _edit(item),
-                              ),
-                              Align(
-                                alignment: Alignment.centerRight,
-                                child: TextButton.icon(
-                                  onPressed: () => _purchase(item),
-                                  icon: const Icon(Icons.add_shopping_cart),
-                                  label: const Text('Adicionar ao estoque'),
-                                ),
-                              ),
-                            ],
+                          return ItemCard(
+                            icon: Icons.inventory_2_outlined,
+                            title: item.name,
+                            subtitle: item.brand,
+                            trailing: formatQuantity(item.stock, item.unit),
+                            alert: item.isOutOfStock,
+                            warning: item.isLowStock,
+                            badge: item.isOutOfStock
+                                ? 'Sem estoque'
+                                : (item.isLowStock ? 'Estoque baixo' : null),
+                            onTap: () => _edit(item),
+                            actionIcon: Icons.add_shopping_cart,
+                            actionTooltip: 'Adicionar ao estoque',
+                            onAction: () => _purchase(item),
                           );
                         },
                       ),
