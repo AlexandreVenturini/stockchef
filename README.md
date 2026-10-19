@@ -42,6 +42,10 @@ flutter run
 
 Para rodar no Windows: `flutter run -d windows`. Para rodar os testes: `flutter test`.
 
+Para apagar os dados e recriar o banco (por exemplo, depois de uma mudança nas tabelas):
+- Windows: feche o app e apague `.dart_tool/sqflite_common_ffi/databases/stockchef.db`
+- Android: desinstale o app
+
 ## Estrutura
 
 ```
@@ -63,10 +67,41 @@ Cada funcionalidade tem:
 
 ## Como contribuir
 
-- `git pull` antes de começar e antes de enviar
+Ninguém faz commit direto na `main`. Cada pessoa trabalha numa branch própria e envia para a `main` por Pull Request (PR).
+
+**1. Criar sua branch** (uma por funcionalidade, com o nome do que está sendo feito, sem nome de pessoa):
+
+```bash
+git switch main
+git pull
+git switch -c cadastro-ingredientes
+```
+
+**2. Trabalhar e fazer commits pequenos**, com mensagem em português dizendo o que foi feito:
+
+```bash
+git add .
+git commit -m "Adiciona lista de ingredientes"
+```
+
+**3. Enviar a branch** (na primeira vez; depois basta `git push`):
+
+```bash
+git push -u origin cadastro-ingredientes
+```
+
+**4. Abrir o Pull Request** no GitHub, da sua branch para a `main`. Antes, confira se `flutter analyze` e `flutter test` passam. O Alexandre testa e faz o merge.
+
+**5. Trazer as novidades da `main`** para a sua branch, quando outra pessoa tiver feito merge:
+
+```bash
+git pull origin main
+```
+
+Regras:
 - Cada pessoa mexe na sua pasta dentro de `lib/features/`
 - Mudanças em `lib/core/` (banco, unidades, tema): combinar antes com o Alexandre
-- Commits pequenos, com mensagem em português dizendo o que foi feito (ex.: "Adiciona lista de ingredientes")
+- No merge do PR, usar **"Create a merge commit"**, nunca "Squash", para não juntar os commits de cada pessoa num só
 
 ## Unidades
 
