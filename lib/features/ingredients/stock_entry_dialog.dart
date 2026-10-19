@@ -10,6 +10,7 @@ class StockEntryDialog extends StatefulWidget {
   @override
   State<StockEntryDialog> createState() => _StockEntryDialogState();
 }
+
 class _StockEntryDialogState extends State<StockEntryDialog> {
   final _form = GlobalKey<FormState>();
   final _quantity = TextEditingController();
@@ -17,33 +18,106 @@ class _StockEntryDialogState extends State<StockEntryDialog> {
   bool _busy = false;
   String? _error;
   @override
-  void initState() { super.initState(); _unit = widget.ingredient.unit; }
+  void initState() {
+    super.initState();
+    _unit = widget.ingredient.unit;
+  }
+
   @override
-  void dispose() { _quantity.dispose(); super.dispose(); }
+  void dispose() {
+    _quantity.dispose();
+    super.dispose();
+  }
+
   Future<void> _save() async {
     if (!_form.currentState!.validate()) return;
-    setState(() { _busy = true; _error = null; });
+    setState(() {
+      _busy = true;
+      _error = null;
+    });
     try {
-      await IngredientRepository().addStock(widget.ingredient.id!, parseNumber(_quantity.text)!, _unit);
+      await IngredientRepository().addStock(
+        widget.ingredient.id!,
+        parseNumber(_quantity.text)!,
+        _unit,
+      );
       if (mounted) Navigator.pop(context, true);
     } catch (_) {
-      if (mounted) setState(() => _error = 'Não foi possível adicionar ao estoque');
-    } finally { if (mounted) setState(() => _busy = false); }
+      if (mounted) {
+        setState(() => _error = 'Não foi possível adicionar ao estoque');
+      }
+    } finally {
+      if (mounted) setState(() => _busy = false);
+    }
   }
+
   @override
-  Widget build(BuildContext context) => PopScope(canPop: !_busy, child: AlertDialog(
-    title: const Text('Adicionar ao estoque'),
-    content: SingleChildScrollView(child: Form(key: _form, child: Column(mainAxisSize: MainAxisSize.min, crossAxisAlignment: CrossAxisAlignment.start, children: [
-      Text(widget.ingredient.name),
-      Text('Estoque atual: ${formatQuantity(widget.ingredient.stock, widget.ingredient.unit)}'),
-      const SizedBox(height: 16),
-      TextFormField(controller: _quantity, enabled: !_busy, autofocus: true, keyboardType: const TextInputType.numberWithOptions(decimal: true), decoration: const InputDecoration(labelText: 'Quantidade comprada'), validator: (text) {
-        final value = parseNumber(text ?? '');
-        return value == null || value <= 0 || _unit.toBase(value) <= 0 ? 'Informe uma quantidade maior que zero' : null;
-      }),
-      DropdownButtonFormField<Unit>(initialValue: _unit, decoration: const InputDecoration(labelText: 'Unidade'), items: widget.ingredient.unit.compatibleUnits.map((u) => DropdownMenuItem(value: u, child: Text(u.label))).toList(), onChanged: _busy ? null : (unit) { if (unit != null) setState(() => _unit = unit); }),
-      if (_error != null) Text(_error!, style: TextStyle(color: Theme.of(context).colorScheme.error)),
-    ]))),
-    actions: [TextButton(onPressed: _busy ? null : () => Navigator.pop(context), child: const Text('Cancelar')), FilledButton(onPressed: _busy ? null : _save, child: Text(_busy ? 'Aguarde...' : 'Adicionar'))],
-  ));
+  Widget build(BuildContext context) => PopScope(
+    canPop: !_busy,
+    child: AlertDialog(
+      title: const Text('Adicionar ao estoque'),
+      content: SingleChildScrollView(
+        child: Form(
+          key: _form,
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(widget.ingredient.name),
+              Text(
+                'Estoque atual: ${formatQuantity(widget.ingredient.stock, widget.ingredient.unit)}',
+              ),
+              const SizedBox(height: 16),
+              TextFormField(
+                controller: _quantity,
+                enabled: !_busy,
+                autofocus: true,
+                keyboardType: const TextInputType.numberWithOptions(
+                  decimal: true,
+                ),
+                decoration: const InputDecoration(
+                  labelText: 'Quantidade comprada',
+                ),
+                validator: (text) {
+                  final value = parseNumber(text ?? '');
+                  return value == null || value <= 0 || _unit.toBase(value) <= 0
+                      ? 'Informe uma quantidade maior que zero'
+                      : null;
+                },
+              ),
+              DropdownButtonFormField<Unit>(
+                initialValue: _unit,
+                decoration: const InputDecoration(labelText: 'Unidade'),
+                items: widget.ingredient.unit.compatibleUnits
+                    .map(
+                      (u) => DropdownMenuItem(value: u, child: Text(u.label)),
+                    )
+                    .toList(),
+                onChanged: _busy
+                    ? null
+                    : (unit) {
+                        if (unit != null) setState(() => _unit = unit);
+                      },
+              ),
+              if (_error != null)
+                Text(
+                  _error!,
+                  style: TextStyle(color: Theme.of(context).colorScheme.error),
+                ),
+            ],
+          ),
+        ),
+      ),
+      actions: [
+        TextButton(
+          onPressed: _busy ? null : () => Navigator.pop(context),
+          child: const Text('Cancelar'),
+        ),
+        FilledButton(
+          onPressed: _busy ? null : _save,
+          child: Text(_busy ? 'Aguarde...' : 'Adicionar'),
+        ),
+      ],
+    ),
+  );
 }

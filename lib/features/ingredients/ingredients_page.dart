@@ -19,37 +19,115 @@ class _IngredientsPageState extends State<IngredientsPage> {
   late Future<List<Ingredient>> _ingredients;
   String _query = '';
   @override
-  void initState() { super.initState(); _ingredients = _repository.getAll(); }
+  void initState() {
+    super.initState();
+    _ingredients = _repository.getAll();
+  }
+
   void _reload() => setState(() => _ingredients = _repository.getAll());
   Future<void> _edit([Ingredient? item]) async {
-    final changed = await Navigator.of(context).push<bool>(MaterialPageRoute(builder: (_) => IngredientFormPage(ingredient: item)));
+    final changed = await Navigator.of(context).push<bool>(
+      MaterialPageRoute(builder: (_) => IngredientFormPage(ingredient: item)),
+    );
     if (mounted && changed == true) _reload();
   }
+
   Future<void> _purchase(Ingredient item) async {
-    final changed = await showDialog<bool>(context: context, builder: (_) => StockEntryDialog(ingredient: item));
+    final changed = await showDialog<bool>(
+      context: context,
+      builder: (_) => StockEntryDialog(ingredient: item),
+    );
     if (mounted && changed == true) _reload();
   }
+
   @override
   Widget build(BuildContext context) => Scaffold(
-    appBar: AppBar(title: const Text('Ingredientes'), actions: [IconButton(tooltip: 'Novo ingrediente', onPressed: _edit, icon: const Icon(Icons.add))]),
-    body: FutureBuilder<List<Ingredient>>(future: _ingredients, builder: (context, snapshot) {
-      if (snapshot.hasError) return Center(child: TextButton(onPressed: _reload, child: const Text('Falha ao carregar. Tentar novamente')));
-      if (!snapshot.hasData) return const Center(child: CircularProgressIndicator());
-      if (snapshot.data!.isEmpty) return EmptyState(icon: Icons.inventory_2_outlined, title: 'Nenhum ingrediente cadastrado', actionLabel: 'Cadastrar primeiro ingrediente', onAction: _edit);
-      final items = snapshot.data!.where((i) => matchesSearch(i.name, _query)).toList();
-      return Column(children: [
-        SearchField(hint: 'Buscar ingredientes', onChanged: (value) => setState(() => _query = value)),
-        Expanded(child: items.isEmpty ? const EmptyState(icon: Icons.search_off, title: 'Nenhum ingrediente encontrado') : RefreshIndicator(
-          onRefresh: () async { _reload(); await _ingredients; },
-          child: ListView.builder(physics: const AlwaysScrollableScrollPhysics(), padding: const EdgeInsets.only(bottom: 24), itemCount: items.length, itemBuilder: (context, index) {
-            final item = items[index];
-            return Column(children: [
-              ItemCard(icon: Icons.inventory_2_outlined, title: item.name, subtitle: 'Toque para editar', trailing: formatQuantity(item.stock, item.unit), alert: item.isOutOfStock, badge: item.isOutOfStock ? 'Sem estoque' : null, onTap: () => _edit(item)),
-              Align(alignment: Alignment.centerRight, child: TextButton.icon(onPressed: () => _purchase(item), icon: const Icon(Icons.add_shopping_cart), label: const Text('Adicionar ao estoque'))),
-            ]);
-          }),
-        )),
-      ]);
-    }),
+    appBar: AppBar(
+      title: const Text('Ingredientes'),
+      actions: [
+        IconButton(
+          tooltip: 'Novo ingrediente',
+          onPressed: _edit,
+          icon: const Icon(Icons.add),
+        ),
+      ],
+    ),
+    body: FutureBuilder<List<Ingredient>>(
+      future: _ingredients,
+      builder: (context, snapshot) {
+        if (snapshot.hasError) {
+          return Center(
+            child: TextButton(
+              onPressed: _reload,
+              child: const Text('Falha ao carregar. Tentar novamente'),
+            ),
+          );
+        }
+        if (!snapshot.hasData) {
+          return const Center(child: CircularProgressIndicator());
+        }
+        if (snapshot.data!.isEmpty) {
+          return EmptyState(
+            icon: Icons.inventory_2_outlined,
+            title: 'Nenhum ingrediente cadastrado',
+            actionLabel: 'Cadastrar primeiro ingrediente',
+            onAction: _edit,
+          );
+        }
+        final items = snapshot.data!
+            .where((i) => matchesSearch(i.name, _query))
+            .toList();
+        return Column(
+          children: [
+            SearchField(
+              hint: 'Buscar ingredientes',
+              onChanged: (value) => setState(() => _query = value),
+            ),
+            Expanded(
+              child: items.isEmpty
+                  ? const EmptyState(
+                      icon: Icons.search_off,
+                      title: 'Nenhum ingrediente encontrado',
+                    )
+                  : RefreshIndicator(
+                      onRefresh: () async {
+                        _reload();
+                        await _ingredients;
+                      },
+                      child: ListView.builder(
+                        physics: const AlwaysScrollableScrollPhysics(),
+                        padding: const EdgeInsets.only(bottom: 24),
+                        itemCount: items.length,
+                        itemBuilder: (context, index) {
+                          final item = items[index];
+                          return Column(
+                            children: [
+                              ItemCard(
+                                icon: Icons.inventory_2_outlined,
+                                title: item.name,
+                                subtitle: 'Toque para editar',
+                                trailing: formatQuantity(item.stock, item.unit),
+                                alert: item.isOutOfStock,
+                                badge: item.isOutOfStock ? 'Sem estoque' : null,
+                                onTap: () => _edit(item),
+                              ),
+                              Align(
+                                alignment: Alignment.centerRight,
+                                child: TextButton.icon(
+                                  onPressed: () => _purchase(item),
+                                  icon: const Icon(Icons.add_shopping_cart),
+                                  label: const Text('Adicionar ao estoque'),
+                                ),
+                              ),
+                            ],
+                          );
+                        },
+                      ),
+                    ),
+            ),
+          ],
+        );
+      },
+    ),
   );
 }

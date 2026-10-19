@@ -27,7 +27,11 @@ void main() {
     );
 
     final id = await db.insert('ingredients', sugar.toMap());
-    final rows = await db.query('ingredients', where: 'id = ?', whereArgs: [id]);
+    final rows = await db.query(
+      'ingredients',
+      where: 'id = ?',
+      whereArgs: [id],
+    );
     final saved = Ingredient.fromMap(rows.single);
 
     expect(saved.id, id);
@@ -50,7 +54,11 @@ void main() {
 
     expect(base.isOutOfStock, isTrue);
     expect(
-      const Ingredient(name: 'Morango', unit: Unit.kg, stock: -300).isOutOfStock,
+      const Ingredient(
+        name: 'Morango',
+        unit: Unit.kg,
+        stock: -300,
+      ).isOutOfStock,
       isTrue,
     );
     expect(

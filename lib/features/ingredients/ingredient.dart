@@ -23,8 +23,7 @@ class Ingredient {
 
   bool get isOutOfStock => stock <= 0;
 
-  bool get isLowStock =>
-      !isOutOfStock && minStock != null && stock < minStock!;
+  bool get isLowStock => !isOutOfStock && minStock != null && stock < minStock!;
 
   factory Ingredient.fromMap(Map<String, Object?> map) {
     return Ingredient(

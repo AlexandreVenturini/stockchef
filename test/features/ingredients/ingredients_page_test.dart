@@ -8,13 +8,21 @@ void main() {
   late Database db;
   setUp(() async => db = await openTestDatabase());
   tearDown(() => closeTestDatabase(db));
-  testWidgets('cadastra ingrediente e adiciona compra ao saldo negativo', (tester) async {
+  testWidgets('cadastra ingrediente e adiciona compra ao saldo negativo', (
+    tester,
+  ) async {
     await tester.pumpWidget(const MaterialApp(home: IngredientsPage()));
     await pumpAndLoad(tester);
     await tester.tap(find.text('Cadastrar primeiro ingrediente'));
     await tester.pumpAndSettle();
-    await tester.enterText(find.widgetWithText(TextFormField, 'Nome'), 'Farinha');
-    await tester.enterText(find.widgetWithText(TextFormField, 'Estoque atual'), '-0,5');
+    await tester.enterText(
+      find.widgetWithText(TextFormField, 'Nome'),
+      'Farinha',
+    );
+    await tester.enterText(
+      find.widgetWithText(TextFormField, 'Estoque atual'),
+      '-0,5',
+    );
     await tester.tap(find.text('Salvar'));
     await pumpAndLoad(tester);
     await tester.pumpAndSettle();
@@ -22,7 +30,10 @@ void main() {
     expect(find.text('Sem estoque'), findsOneWidget);
     await tester.tap(find.text('Adicionar ao estoque'));
     await tester.pumpAndSettle();
-    await tester.enterText(find.widgetWithText(TextFormField, 'Quantidade comprada'), '1,5');
+    await tester.enterText(
+      find.widgetWithText(TextFormField, 'Quantidade comprada'),
+      '1,5',
+    );
     await tester.tap(find.text('Adicionar'));
     await pumpAndLoad(tester);
     await tester.pumpAndSettle();
