@@ -1,17 +1,106 @@
-# stockchef
+# StockChef
 
-A new Flutter project.
+Controle de estoque e produção para pequenas produtoras de alimentos.
 
-## Getting Started
+Projeto do **Hackathon IFES Campus Santa Teresa – Economia Local e Pequenos Negócios** (19/10/2026).
 
-This project is a starting point for a Flutter application.
+## O problema
 
-A few resources to get you started if this is your first Flutter project:
+A Larissa Toffoli produz caldas e preparos. A cada lote, ela precisa saber quanto de cada ingrediente saiu do estoque e quanto ainda sobrou.
 
-- [Learn Flutter](https://docs.flutter.dev/get-started/learn-flutter)
-- [Write your first Flutter app](https://docs.flutter.dev/get-started/codelab)
-- [Flutter learning resources](https://docs.flutter.dev/reference/learning-resources)
+O StockChef faz essa conta sozinho: ela registra "hoje produzi 3 kg de calda de morango" e o app desconta do estoque a quantidade proporcional de cada ingrediente da receita.
 
-For help getting started with Flutter development, view the
-[online documentation](https://docs.flutter.dev/), which offers tutorials,
-samples, guidance on mobile development, and a full API reference.
+## Funcionalidades
+
+- Cadastro de ingredientes com estoque atual (kg, g, L, ml, un)
+- Cadastro de receitas com ingredientes, quantidades e rendimento
+- Registro de produção com baixa automática e proporcional do estoque
+- Histórico de produção separado por dia
+
+## Equipe
+
+| Pessoa | Papel |
+|---|---|
+| Alexandre | Repositório, base do app, tela de produção e integração |
+| Fernanda | Cadastro de receitas |
+| Gabi | Design e UI |
+| Julia | Cadastro de ingredientes e estoque |
+| Paulo | Representante e pitch |
+
+## Como rodar
+
+Pré-requisitos: Flutter 3.41 (Dart 3.11) e um destes:
+- Android: emulador ou celular com depuração USB
+- Windows: Visual Studio com "Desenvolvimento para desktop com C++"
+
+```bash
+git clone https://github.com/AlexandreVenturini/stockchef.git
+cd stockchef
+flutter pub get
+flutter run
+```
+
+Para rodar no Windows: `flutter run -d windows`. Para rodar os testes: `flutter test`.
+
+## Estrutura
+
+```
+lib/
+  main.dart            inicia o banco e abre o app
+  app.dart             tema e navegação com 3 abas
+  core/                código compartilhado (tema, banco, unidades, formatação)
+  features/
+    ingredients/       ingredientes e estoque
+    recipes/           receitas
+    production/        produção e histórico
+test/                  testes unitários
+```
+
+Cada funcionalidade tem:
+- **modelo**: a classe com os campos (`ingredient.dart`)
+- **repository**: o único lugar com SQL (`ingredient_repository.dart`)
+- **páginas**: as telas, que só conversam com o repository (`ingredients_page.dart`)
+
+## Como contribuir
+
+- `git pull` antes de começar e antes de enviar
+- Cada pessoa mexe na sua pasta dentro de `lib/features/`
+- Mudanças em `lib/core/` (banco, unidades, tema): combinar antes com o Alexandre
+- Commits pequenos, com mensagem em português dizendo o que foi feito (ex.: "Adiciona lista de ingredientes")
+
+## Unidades
+
+No banco, toda quantidade é guardada na **unidade base** da sua família:
+
+| Família | Unidades | Base |
+|---|---|---|
+| Peso | kg, g | g |
+| Volume | L, ml | ml |
+| Unidade | un | un |
+
+Se a pessoa digita "1,5 kg", o banco grava `1500` e guarda `kg` só para mostrar na tela. Assim todas as contas acontecem na mesma unidade. Os campos de unidade só oferecem unidades da mesma família do ingrediente.
+
+## Modelo de dados
+
+| Tabela | Campos |
+|---|---|
+| `ingredients` | id, name, unit, stock, min_stock, price |
+| `recipes` | id, name, yield_qty, yield_unit, output_ingredient_id |
+| `recipe_items` | id, recipe_id, ingredient_id, quantity, unit |
+| `productions` | id, recipe_id, recipe_name, date, quantity, unit, created_at |
+| `production_items` | id, production_id, ingredient_id, ingredient_name, quantity, unit |
+
+`min_stock`, `price` e `output_ingredient_id` são para funcionalidades extras e ainda não têm tela.
+
+### Como funciona a baixa de estoque
+
+```
+fator   = quantidade produzida / rendimento da receita
+consumo = quantidade do ingrediente na receita × fator
+```
+
+Exemplo: a receita rende 1 kg com 600 g de morango. Produzindo 2,5 kg, o fator é 2,5 e saem 1500 g de morango do estoque.
+
+- Se faltar ingrediente, o app avisa e pede confirmação. Se confirmar, o estoque fica negativo e aparece em vermelho.
+- Cada produção guarda o que consumiu, então o histórico não muda se a receita for editada depois.
+- Excluir uma produção devolve os ingredientes ao estoque.
