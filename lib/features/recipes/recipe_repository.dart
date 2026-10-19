@@ -28,10 +28,8 @@ class RecipeRepository {
 
     return recipeRows
         .map(
-          (row) => Recipe.fromMap(
-            row,
-            items: itemsByRecipe[row['id']] ?? const [],
-          ),
+          (row) =>
+              Recipe.fromMap(row, items: itemsByRecipe[row['id']] ?? const []),
         )
         .toList();
   }
@@ -56,7 +54,7 @@ class RecipeRepository {
   /// Tudo na mesma transação: ou salva a receita inteira, ou nada.
   /// Retorna o id da receita.
   Future<int> save(Recipe recipe) async {
-    _validate(recipe);
+    validateRecipe(recipe);
 
     final db = await _database;
     return db.transaction((txn) async {
@@ -98,32 +96,32 @@ class RecipeRepository {
     final rows = await db.query('ingredients', orderBy: 'name COLLATE NOCASE');
     return rows.map(Ingredient.fromMap).toList();
   }
+}
 
-  void _validate(Recipe recipe) {
-    if (recipe.name.trim().isEmpty) {
-      throw ArgumentError.value(recipe.name, 'name', 'Informe o nome');
-    }
-    if (recipe.yieldQuantity <= 0) {
-      throw ArgumentError.value(
-        recipe.yieldQuantity,
-        'yieldQuantity',
-        'O rendimento precisa ser maior que zero',
-      );
-    }
-    if (recipe.items.isEmpty) {
-      throw ArgumentError.value(
-        recipe.items,
-        'items',
-        'A receita precisa ter ao menos um ingrediente',
-      );
-    }
-    final ids = recipe.items.map((item) => item.ingredientId).toSet();
-    if (ids.length != recipe.items.length) {
-      throw ArgumentError.value(
-        recipe.items,
-        'items',
-        'Ingrediente repetido na receita',
-      );
-    }
+void validateRecipe(Recipe recipe) {
+  if (recipe.name.trim().isEmpty) {
+    throw ArgumentError.value(recipe.name, 'name', 'Informe o nome');
+  }
+  if (recipe.yieldQuantity <= 0) {
+    throw ArgumentError.value(
+      recipe.yieldQuantity,
+      'yieldQuantity',
+      'O rendimento precisa ser maior que zero',
+    );
+  }
+  if (recipe.items.isEmpty) {
+    throw ArgumentError.value(
+      recipe.items,
+      'items',
+      'A receita precisa ter ao menos um ingrediente',
+    );
+  }
+  final ids = recipe.items.map((item) => item.ingredientId).toSet();
+  if (ids.length != recipe.items.length) {
+    throw ArgumentError.value(
+      recipe.items,
+      'items',
+      'Ingrediente repetido na receita',
+    );
   }
 }
