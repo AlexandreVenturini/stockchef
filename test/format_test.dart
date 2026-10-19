@@ -58,5 +58,35 @@ void main() {
     test('fromDateKey lê a chave do banco', () {
       expect(fromDateKey('2026-10-09'), DateTime(2026, 10, 9));
     });
+
+    test('formatTime mostra hora e minuto', () {
+      expect(formatTime(DateTime(2026, 10, 19, 9, 5)), '09:05');
+    });
+  });
+
+  group('formatDayLabel', () {
+    final today = DateTime(2026, 10, 19, 15, 30);
+
+    test('mostra Hoje para o dia atual', () {
+      expect(formatDayLabel(DateTime(2026, 10, 19), today: today), 'Hoje');
+    });
+
+    test('mostra Ontem para o dia anterior', () {
+      expect(formatDayLabel(DateTime(2026, 10, 18), today: today), 'Ontem');
+    });
+
+    test('mostra a data para dias mais antigos', () {
+      expect(
+        formatDayLabel(DateTime(2026, 10, 17), today: today),
+        '17/10/2026',
+      );
+    });
+
+    test('reconhece Ontem na virada do mês', () {
+      expect(
+        formatDayLabel(DateTime(2026, 9, 30), today: DateTime(2026, 10, 1)),
+        'Ontem',
+      );
+    });
   });
 }
