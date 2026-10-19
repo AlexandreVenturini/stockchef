@@ -28,7 +28,7 @@ void main() {
     await tester.pumpAndSettle();
     expect(find.text('-0,5 kg'), findsOneWidget);
     expect(find.text('Sem estoque'), findsOneWidget);
-    await tester.tap(find.text('Adicionar ao estoque'));
+    await tester.tap(find.byTooltip('Adicionar ao estoque'));
     await tester.pumpAndSettle();
     await tester.enterText(
       find.widgetWithText(TextFormField, 'Quantidade comprada'),

@@ -13,6 +13,9 @@ class ItemCard extends StatelessWidget {
     this.warning = false,
     this.badge,
     this.onTap,
+    this.actionIcon,
+    this.actionTooltip,
+    this.onAction,
   });
 
   final IconData icon;
@@ -23,6 +26,9 @@ class ItemCard extends StatelessWidget {
   final bool warning;
   final String? badge;
   final VoidCallback? onTap;
+  final IconData? actionIcon;
+  final String? actionTooltip;
+  final VoidCallback? onAction;
 
   @override
   Widget build(BuildContext context) {
@@ -106,6 +112,14 @@ class ItemCard extends StatelessWidget {
                     ),
                 ],
               ),
+              if (onAction != null) ...[
+                const SizedBox(width: AppSpacing.sm),
+                IconButton.filledTonal(
+                  tooltip: actionTooltip,
+                  onPressed: onAction,
+                  icon: Icon(actionIcon ?? Icons.add),
+                ),
+              ],
             ],
           ),
         ),

@@ -51,7 +51,16 @@ class _RecipesPageState extends State<RecipesPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('Receitas')),
+      appBar: AppBar(
+        title: const Text('Receitas'),
+        actions: [
+          IconButton(
+            tooltip: 'Nova receita',
+            icon: const Icon(Icons.add),
+            onPressed: _openForm,
+          ),
+        ],
+      ),
       body: FutureBuilder<(List<Recipe>, Map<int, String>)>(
         future: _data,
         builder: (context, snapshot) {
@@ -97,7 +106,7 @@ class _RecipesPageState extends State<RecipesPage> {
                         title: 'Nenhuma receita encontrada',
                       )
                     : ListView(
-                        padding: const EdgeInsets.only(bottom: 88),
+                        padding: const EdgeInsets.only(bottom: AppSpacing.lg),
                         children: [
                           for (final recipe in filtered)
                             _RecipeCard(
@@ -114,11 +123,6 @@ class _RecipesPageState extends State<RecipesPage> {
             ],
           );
         },
-      ),
-      floatingActionButton: FloatingActionButton.extended(
-        onPressed: _openForm,
-        icon: const Icon(Icons.add),
-        label: const Text('Nova receita'),
       ),
     );
   }
