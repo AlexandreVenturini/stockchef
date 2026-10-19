@@ -24,7 +24,12 @@ class _IngredientsPageState extends State<IngredientsPage> {
     _ingredients = _repository.getAll();
   }
 
-  void _reload() => setState(() => _ingredients = _repository.getAll());
+  void _reload() {
+    setState(() {
+      _ingredients = _repository.getAll();
+    });
+  }
+
   Future<void> _edit([Ingredient? item]) async {
     final changed = await Navigator.of(context).push<bool>(
       MaterialPageRoute(builder: (_) => IngredientFormPage(ingredient: item)),
@@ -105,10 +110,15 @@ class _IngredientsPageState extends State<IngredientsPage> {
                               ItemCard(
                                 icon: Icons.inventory_2_outlined,
                                 title: item.name,
-                                subtitle: 'Toque para editar',
+                                subtitle: item.brand,
                                 trailing: formatQuantity(item.stock, item.unit),
                                 alert: item.isOutOfStock,
-                                badge: item.isOutOfStock ? 'Sem estoque' : null,
+                                warning: item.isLowStock,
+                                badge: item.isOutOfStock
+                                    ? 'Sem estoque'
+                                    : (item.isLowStock
+                                          ? 'Estoque baixo'
+                                          : null),
                                 onTap: () => _edit(item),
                               ),
                               Align(
