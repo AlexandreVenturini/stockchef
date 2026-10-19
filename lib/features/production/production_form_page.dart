@@ -213,13 +213,17 @@ class _ProductionFormPageState extends State<ProductionFormPage> {
                 DropdownButtonFormField<int>(
                   initialValue: _recipe?.id,
                   isExpanded: true,
-                  decoration: const InputDecoration(labelText: 'Receita'),
+                  decoration: const InputDecoration(
+                    labelText: 'Receita ou preparo',
+                  ),
                   items: [
                     for (final recipe in _recipes)
                       DropdownMenuItem(
                         value: recipe.id,
                         child: Text(
-                          recipe.name,
+                          recipe.isPreparation
+                              ? '${recipe.name} (preparo)'
+                              : recipe.name,
                           overflow: TextOverflow.ellipsis,
                         ),
                       ),
@@ -284,6 +288,21 @@ class _ProductionFormPageState extends State<ProductionFormPage> {
                   const SizedBox(height: AppSpacing.sm),
                   for (final consumption in plan.consumptions)
                     _ConsumptionTile(consumption: consumption),
+                  if (plan.recipe.isPreparation)
+                    Card(
+                      margin: const EdgeInsets.only(bottom: AppSpacing.sm),
+                      child: ListTile(
+                        title: Text(
+                          'Vai entrar no estoque: ${plan.recipe.name}',
+                        ),
+                        trailing: Text(
+                          '+${formatQuantity(plan.producedQuantity, plan.recipe.yieldUnit)}',
+                          style: theme.textTheme.titleMedium?.copyWith(
+                            color: AppColors.quantity,
+                          ),
+                        ),
+                      ),
+                    ),
                 ],
               ],
             ),

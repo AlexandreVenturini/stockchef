@@ -80,10 +80,20 @@ class _ProductionDetailPageState extends State<ProductionDetailPage> {
               ),
             ),
           ),
-          for (final item in production.items)
+          for (final item in production.items.where((i) => i.quantity > 0))
             ListTile(
               title: Text(item.ingredientName),
               trailing: Text(formatQuantity(item.quantity, item.unit)),
+            ),
+          for (final item in production.items.where((i) => i.quantity < 0))
+            ListTile(
+              title: Text('Entrou no estoque: ${item.ingredientName}'),
+              trailing: Text(
+                '+${formatQuantity(-item.quantity, item.unit)}',
+                style: theme.textTheme.titleMedium?.copyWith(
+                  color: AppColors.quantity,
+                ),
+              ),
             ),
         ],
       ),
