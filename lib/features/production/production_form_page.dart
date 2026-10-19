@@ -4,6 +4,7 @@ import 'package:flutter/services.dart';
 import '../../core/format.dart';
 import '../../core/theme.dart';
 import '../../core/units.dart';
+import '../../core/widgets/form_section.dart';
 import '../ingredients/ingredient.dart';
 import '../recipes/recipe.dart';
 import '../recipes/recipe_repository.dart';
@@ -194,117 +195,140 @@ class _ProductionFormPageState extends State<ProductionFormPage> {
       child: Column(
         children: [
           Expanded(
-            child: ListView(
+            child: SingleChildScrollView(
               padding: const EdgeInsets.all(AppSpacing.md),
-              children: [
-                Card(
-                  margin: EdgeInsets.zero,
-                  child: ListTile(
-                    leading: const Icon(Icons.calendar_today_outlined),
-                    title: const Text('Data'),
-                    trailing: Text(
-                      '${formatDayLabel(_date)} · ${formatDate(_date)}',
-                      style: theme.textTheme.titleSmall,
-                    ),
-                    onTap: _pickDate,
-                  ),
-                ),
-                const SizedBox(height: AppSpacing.md),
-                DropdownButtonFormField<int>(
-                  initialValue: _recipe?.id,
-                  isExpanded: true,
-                  decoration: const InputDecoration(
-                    labelText: 'Receita ou preparo',
-                  ),
-                  items: [
-                    for (final recipe in _recipes)
-                      DropdownMenuItem(
-                        value: recipe.id,
-                        child: Text(
-                          recipe.isPreparation
-                              ? '${recipe.name} (preparo)'
-                              : recipe.name,
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                      ),
-                  ],
-                  validator: (id) => id == null ? 'Escolha a receita' : null,
-                  onChanged: (id) {
-                    if (id != null) _selectRecipe(id);
-                  },
-                ),
-                const SizedBox(height: AppSpacing.md),
-                Row(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Expanded(
-                      child: TextFormField(
-                        controller: _quantityController,
-                        keyboardType: const TextInputType.numberWithOptions(
-                          decimal: true,
-                        ),
-                        inputFormatters: [
-                          FilteringTextInputFormatter.allow(RegExp(r'[0-9.,]')),
-                        ],
-                        decoration: const InputDecoration(
-                          labelText: 'Quantidade produzida',
-                        ),
-                        validator: _validateQuantity,
-                        onChanged: (_) => setState(() {}),
-                      ),
-                    ),
-                    const SizedBox(width: AppSpacing.sm),
-                    SizedBox(
-                      width: 110,
-                      child: DropdownButtonFormField<Unit>(
-                        key: ValueKey('unit-${_recipe?.id}-${_unit.name}'),
-                        initialValue: _unit,
-                        decoration: const InputDecoration(labelText: 'Unidade'),
-                        items: [
-                          for (final unit in units)
-                            DropdownMenuItem(
-                              value: unit,
-                              child: Text(unit.label),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  FormSection(
+                    title: 'O que foi produzido',
+                    children: [
+                      InkWell(
+                        onTap: _pickDate,
+                        borderRadius: BorderRadius.circular(AppRadius.md),
+                        child: InputDecorator(
+                          decoration: const InputDecoration(
+                            labelText: 'Data',
+                            prefixIcon: FieldIcon(
+                              Icons.calendar_today_outlined,
                             ),
-                        ],
-                        onChanged: (unit) {
-                          if (unit == null) return;
-                          setState(() {
-                            _unit = unit;
-                          });
-                        },
-                      ),
-                    ),
-                  ],
-                ),
-                if (plan != null) ...[
-                  const SizedBox(height: AppSpacing.lg),
-                  Text(
-                    'Vai sair do estoque',
-                    style: theme.textTheme.titleSmall?.copyWith(
-                      color: theme.colorScheme.primary,
-                    ),
-                  ),
-                  const SizedBox(height: AppSpacing.sm),
-                  for (final consumption in plan.consumptions)
-                    _ConsumptionTile(consumption: consumption),
-                  if (plan.recipe.isPreparation)
-                    Card(
-                      margin: const EdgeInsets.only(bottom: AppSpacing.sm),
-                      child: ListTile(
-                        title: Text(
-                          'Vai entrar no estoque: ${plan.recipe.name}',
-                        ),
-                        trailing: Text(
-                          '+${formatQuantity(plan.producedQuantity, plan.recipe.yieldUnit)}',
-                          style: theme.textTheme.titleMedium?.copyWith(
-                            color: AppColors.quantity,
+                          ),
+                          child: Text(
+                            '${formatDayLabel(_date)} · ${formatDate(_date)}',
                           ),
                         ),
                       ),
+                      const SizedBox(height: AppSpacing.md),
+                      DropdownButtonFormField<int>(
+                        initialValue: _recipe?.id,
+                        isExpanded: true,
+                        decoration: const InputDecoration(
+                          labelText: 'Receita ou preparo',
+                          prefixIcon: FieldIcon(Icons.menu_book_outlined),
+                        ),
+                        items: [
+                          for (final recipe in _recipes)
+                            DropdownMenuItem(
+                              value: recipe.id,
+                              child: Text(
+                                recipe.isPreparation
+                                    ? '${recipe.name} (preparo)'
+                                    : recipe.name,
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                            ),
+                        ],
+                        validator: (id) =>
+                            id == null ? 'Escolha a receita' : null,
+                        onChanged: (id) {
+                          if (id != null) _selectRecipe(id);
+                        },
+                      ),
+                      const SizedBox(height: AppSpacing.md),
+                      Row(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Expanded(
+                            child: TextFormField(
+                              controller: _quantityController,
+                              keyboardType:
+                                  const TextInputType.numberWithOptions(
+                                    decimal: true,
+                                  ),
+                              inputFormatters: [
+                                FilteringTextInputFormatter.allow(
+                                  RegExp(r'[0-9.,]'),
+                                ),
+                              ],
+                              decoration: const InputDecoration(
+                                labelText: 'Quantidade produzida',
+                                prefixIcon: FieldIcon(Icons.scale_outlined),
+                              ),
+                              validator: _validateQuantity,
+                              onChanged: (_) => setState(() {}),
+                            ),
+                          ),
+                          const SizedBox(width: AppSpacing.sm),
+                          SizedBox(
+                            width: 110,
+                            child: DropdownButtonFormField<Unit>(
+                              key: ValueKey(
+                                'unit-${_recipe?.id}-${_unit.name}',
+                              ),
+                              initialValue: _unit,
+                              decoration: const InputDecoration(
+                                labelText: 'Unidade',
+                              ),
+                              items: [
+                                for (final unit in units)
+                                  DropdownMenuItem(
+                                    value: unit,
+                                    child: Text(unit.label),
+                                  ),
+                              ],
+                              onChanged: (unit) {
+                                if (unit == null) return;
+                                setState(() {
+                                  _unit = unit;
+                                });
+                              },
+                            ),
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
+                  if (plan != null) ...[
+                    _PlanBanner(hasShortage: plan.hasShortage),
+                    const SizedBox(height: AppSpacing.md),
+                    Text(
+                      'Vai sair do estoque',
+                      style: theme.textTheme.titleSmall?.copyWith(
+                        color: AppColors.title,
+                        fontWeight: FontWeight.w700,
+                      ),
                     ),
+                    const SizedBox(height: AppSpacing.sm),
+                    for (final consumption in plan.consumptions)
+                      _ConsumptionTile(consumption: consumption),
+                    if (plan.recipe.isPreparation)
+                      Card(
+                        margin: const EdgeInsets.only(bottom: AppSpacing.sm),
+                        child: ListTile(
+                          title: Text(
+                            'Vai entrar no estoque: ${plan.recipe.name}',
+                          ),
+                          trailing: Text(
+                            '+${formatQuantity(plan.producedQuantity, plan.recipe.yieldUnit)}',
+                            style: theme.textTheme.titleMedium?.copyWith(
+                              color: AppColors.quantity,
+                            ),
+                          ),
+                        ),
+                      ),
+                  ],
                 ],
-              ],
+              ),
             ),
           ),
           SafeArea(
@@ -317,6 +341,45 @@ class _ProductionFormPageState extends State<ProductionFormPage> {
                 ),
                 child: const Text('Salvar produção'),
               ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _PlanBanner extends StatelessWidget {
+  const _PlanBanner({required this.hasShortage});
+
+  final bool hasShortage;
+
+  @override
+  Widget build(BuildContext context) {
+    final color = hasShortage ? AppColors.alert : AppColors.success;
+    return Container(
+      padding: const EdgeInsets.all(AppSpacing.md - 4),
+      decoration: BoxDecoration(
+        color: hasShortage
+            ? AppColors.alertBackground
+            : AppColors.successBackground,
+        borderRadius: BorderRadius.circular(AppRadius.md),
+      ),
+      child: Row(
+        children: [
+          Icon(
+            hasShortage
+                ? Icons.warning_amber_rounded
+                : Icons.check_circle_outline,
+            color: color,
+          ),
+          const SizedBox(width: AppSpacing.sm),
+          Expanded(
+            child: Text(
+              hasShortage
+                  ? 'Falta ingrediente para essa produção. Você ainda pode salvar.'
+                  : 'Tem estoque para tudo',
+              style: TextStyle(color: color, fontWeight: FontWeight.w600),
             ),
           ),
         ],

@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 
 import '../../core/format.dart';
 import '../../core/theme.dart';
+import '../../core/widgets/item_card.dart';
+import '../../core/widgets/section_title.dart';
 import 'production.dart';
 import 'production_repository.dart';
 
@@ -50,52 +52,41 @@ class _ProductionDetailPageState extends State<ProductionDetailPage> {
   Widget build(BuildContext context) {
     final production = widget.production;
     final theme = Theme.of(context);
+    final consumed = production.items.where((i) => i.quantity > 0).toList();
+    final produced = production.items.where((i) => i.quantity < 0).toList();
 
     return Scaffold(
       appBar: AppBar(title: Text(production.recipeName)),
-      body: ListView(
-        children: [
-          ListTile(
-            title: const Text('Data'),
-            trailing: Text(formatDate(production.date)),
-          ),
-          ListTile(
-            title: const Text('Quantidade produzida'),
-            trailing: Text(
-              formatQuantity(production.quantity, production.unit),
-              style: theme.textTheme.titleMedium,
-            ),
-          ),
-          Padding(
-            padding: const EdgeInsets.fromLTRB(
-              AppSpacing.md,
-              AppSpacing.lg,
-              AppSpacing.md,
-              AppSpacing.xs,
-            ),
-            child: Text(
+      body: SingleChildScrollView(
+        padding: const EdgeInsets.only(
+          top: AppSpacing.xs,
+          bottom: AppSpacing.lg,
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            _SummaryCard(production: production),
+            SectionTitle(
               'Ingredientes consumidos',
-              style: theme.textTheme.titleSmall?.copyWith(
-                color: theme.colorScheme.primary,
+              trailing: consumed.length == 1
+                  ? '1 item'
+                  : '${consumed.length} itens',
+            ),
+            for (final item in consumed)
+              ItemCard(
+                icon: Icons.inventory_2_outlined,
+                title: item.ingredientName,
+                trailing: formatQuantity(item.quantity, item.unit),
               ),
-            ),
-          ),
-          for (final item in production.items.where((i) => i.quantity > 0))
-            ListTile(
-              title: Text(item.ingredientName),
-              trailing: Text(formatQuantity(item.quantity, item.unit)),
-            ),
-          for (final item in production.items.where((i) => i.quantity < 0))
-            ListTile(
-              title: Text('Entrou no estoque: ${item.ingredientName}'),
-              trailing: Text(
-                '+${formatQuantity(-item.quantity, item.unit)}',
-                style: theme.textTheme.titleMedium?.copyWith(
-                  color: AppColors.quantity,
-                ),
+            if (produced.isNotEmpty) const SectionTitle('Entrou no estoque'),
+            for (final item in produced)
+              ItemCard(
+                icon: Icons.blender_outlined,
+                title: item.ingredientName,
+                trailing: '+${formatQuantity(-item.quantity, item.unit)}',
               ),
-            ),
-        ],
+          ],
+        ),
       ),
       bottomNavigationBar: SafeArea(
         child: Padding(
@@ -109,6 +100,81 @@ class _ProductionDetailPageState extends State<ProductionDetailPage> {
               minimumSize: const Size.fromHeight(AppSizes.buttonHeight),
             ),
           ),
+        ),
+      ),
+    );
+  }
+}
+
+class _SummaryCard extends StatelessWidget {
+  const _SummaryCard({required this.production});
+
+  final Production production;
+
+  @override
+  Widget build(BuildContext context) {
+    final textTheme = Theme.of(context).textTheme;
+    final dayLabel = formatDayLabel(production.date);
+    final date = formatDate(production.date);
+    final dateText = dayLabel == date ? date : '$dayLabel · $date';
+
+    return Card(
+      child: Padding(
+        padding: const EdgeInsets.all(AppSpacing.md),
+        child: Row(
+          children: [
+            Container(
+              width: 56,
+              height: 56,
+              decoration: BoxDecoration(
+                color: AppColors.iconBackground,
+                borderRadius: BorderRadius.circular(AppRadius.md),
+              ),
+              child: const Icon(
+                Icons.soup_kitchen_outlined,
+                color: AppColors.primary,
+                size: 28,
+              ),
+            ),
+            const SizedBox(width: AppSpacing.md),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'Quantidade produzida',
+                    style: textTheme.bodySmall?.copyWith(
+                      color: AppColors.textSecondary,
+                    ),
+                  ),
+                  Text(
+                    formatQuantity(production.quantity, production.unit),
+                    style: textTheme.headlineSmall?.copyWith(
+                      color: AppColors.quantity,
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                  const SizedBox(height: AppSpacing.xs),
+                  Row(
+                    children: [
+                      const Icon(
+                        Icons.calendar_today_outlined,
+                        size: 16,
+                        color: AppColors.textSecondary,
+                      ),
+                      const SizedBox(width: AppSpacing.xs),
+                      Text(
+                        '$dateText às ${formatTime(production.createdAt)}',
+                        style: textTheme.bodyMedium?.copyWith(
+                          color: AppColors.textSecondary,
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+          ],
         ),
       ),
     );
