@@ -10,6 +10,7 @@ class ItemCard extends StatelessWidget {
     this.subtitle,
     required this.trailing,
     this.alert = false,
+    this.warning = false,
     this.badge,
     this.onTap,
   });
@@ -19,13 +20,19 @@ class ItemCard extends StatelessWidget {
   final String? subtitle;
   final String trailing;
   final bool alert;
+  final bool warning;
   final String? badge;
   final VoidCallback? onTap;
 
   @override
   Widget build(BuildContext context) {
     final textTheme = Theme.of(context).textTheme;
-    final trailingColor = alert ? AppColors.alert : AppColors.quantity;
+    final trailingColor = alert
+        ? AppColors.alert
+        : (warning ? AppColors.warning : AppColors.quantity);
+    final badgeBackground = alert
+        ? AppColors.alertBackground
+        : AppColors.warningBackground;
 
     return Card(
       clipBehavior: Clip.antiAlias,
@@ -87,13 +94,13 @@ class ItemCard extends StatelessWidget {
                         vertical: 2,
                       ),
                       decoration: BoxDecoration(
-                        color: AppColors.alertBackground,
+                        color: badgeBackground,
                         borderRadius: BorderRadius.circular(AppSpacing.sm),
                       ),
                       child: Text(
                         badge!,
                         style: textTheme.labelSmall?.copyWith(
-                          color: AppColors.alert,
+                          color: trailingColor,
                         ),
                       ),
                     ),
