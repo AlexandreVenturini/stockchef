@@ -55,7 +55,26 @@ class _DashboardPageState extends State<DashboardPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('Início')),
+      appBar: AppBar(
+        title: Row(
+          children: [
+            Image.asset('assets/images/logo.png', height: 32),
+            const SizedBox(width: AppSpacing.sm),
+            const Text.rich(
+              TextSpan(
+                text: 'Stock',
+                children: [
+                  TextSpan(
+                    text: 'Chef',
+                    style: TextStyle(color: AppColors.primary),
+                  ),
+                ],
+              ),
+              style: TextStyle(fontSize: 22),
+            ),
+          ],
+        ),
+      ),
       body: FutureBuilder<_DashboardData>(
         future: _data,
         builder: (context, snapshot) {
