@@ -17,6 +17,8 @@ class Recipe {
   final int? outputIngredientId;
   final List<RecipeItem> items;
 
+  bool get isPreparation => outputIngredientId != null;
+
   factory Recipe.fromMap(
     Map<String, Object?> map, {
     List<RecipeItem> items = const [],
