@@ -42,6 +42,10 @@ flutter run
 
 Para rodar no Windows: `flutter run -d windows`. Para rodar os testes: `flutter test`.
 
+Para apagar os dados e recriar o banco (por exemplo, depois de uma mudança nas tabelas):
+- Windows: feche o app e apague `.dart_tool/sqflite_common_ffi/databases/stockchef.db`
+- Android: desinstale o app
+
 ## Estrutura
 
 ```
