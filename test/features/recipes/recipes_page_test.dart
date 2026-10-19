@@ -51,7 +51,7 @@ void main() {
     await pumpPage(tester);
 
     expect(find.text('Nenhuma receita cadastrada'), findsOneWidget);
-    expect(find.text('Nova receita'), findsOneWidget);
+    expect(find.byTooltip('Nova receita'), findsOneWidget);
   });
 
   testWidgets('lista a receita com rendimento e número de ingredientes', (
@@ -70,7 +70,7 @@ void main() {
   ) async {
     await pumpPage(tester);
 
-    await tester.tap(find.text('Nova receita'));
+    await tester.tap(find.byTooltip('Nova receita'));
     await pumpAndLoad(tester);
 
     expect(find.textContaining('Cadastre ao menos um ingrediente'), findsOneWidget);
@@ -80,7 +80,7 @@ void main() {
     await tester.runAsync(seedRecipe);
     await pumpPage(tester);
 
-    await tester.tap(find.text('Nova receita'));
+    await tester.tap(find.byTooltip('Nova receita'));
     await pumpAndLoad(tester);
     await tester.tap(find.text('Salvar receita'));
     await tester.pump();
