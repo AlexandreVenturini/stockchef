@@ -15,7 +15,9 @@ class _IngredientFormPageState extends State<IngredientFormPage> {
   final _form = GlobalKey<FormState>();
   final _repository = IngredientRepository();
   late final TextEditingController _name;
+  late final TextEditingController _brand;
   late final TextEditingController _stock;
+  late final TextEditingController _minStock;
   late Unit _unit;
   bool _busy = false;
   String? _error;
@@ -25,16 +27,36 @@ class _IngredientFormPageState extends State<IngredientFormPage> {
     final item = widget.ingredient;
     _unit = item?.unit ?? Unit.kg;
     _name = TextEditingController(text: item?.name ?? '');
+    _brand = TextEditingController(text: item?.brand ?? '');
     _stock = TextEditingController(
       text: formatNumber(_unit.fromBase(item?.stock ?? 0)),
+    );
+    final minStock = item?.minStock;
+    _minStock = TextEditingController(
+      text: minStock == null ? '' : formatNumber(_unit.fromBase(minStock)),
     );
   }
 
   @override
   void dispose() {
     _name.dispose();
+    _brand.dispose();
     _stock.dispose();
+    _minStock.dispose();
     super.dispose();
+  }
+
+  String? _validateMinStock(String? text) {
+    if ((text ?? '').trim().isEmpty) return null;
+    final value = parseNumber(text!);
+    if (value == null || value < 0) return 'Informe um número válido';
+    return null;
+  }
+
+  void _convertField(TextEditingController controller, Unit from, Unit to) {
+    final value = parseNumber(controller.text);
+    if (value == null || !from.isCompatibleWith(to)) return;
+    controller.text = formatNumber(to.fromBase(from.toBase(value)));
   }
 
   Future<void> _save() async {
@@ -45,15 +67,17 @@ class _IngredientFormPageState extends State<IngredientFormPage> {
     });
     try {
       final old = widget.ingredient;
+      final brand = _brand.text.trim();
+      final minStock = parseNumber(_minStock.text);
       await _repository.save(
         Ingredient(
           id: old?.id,
           name: _name.text.trim(),
           unit: _unit,
           stock: _unit.toBase(parseNumber(_stock.text)!),
-          minStock: old?.minStock,
+          minStock: minStock == null ? null : _unit.toBase(minStock),
           price: old?.price,
-          brand: old?.brand,
+          brand: brand.isEmpty ? null : brand,
           isPreparation: old?.isPreparation ?? false,
         ),
       );
@@ -127,6 +151,13 @@ class _IngredientFormPageState extends State<IngredientFormPage> {
                   : null,
             ),
             const SizedBox(height: 16),
+            TextFormField(
+              controller: _brand,
+              enabled: !_busy,
+              textCapitalization: TextCapitalization.words,
+              decoration: const InputDecoration(labelText: 'Marca (opcional)'),
+            ),
+            const SizedBox(height: 16),
             DropdownButtonFormField<Unit>(
               initialValue: _unit,
               decoration: const InputDecoration(labelText: 'Unidade'),
@@ -138,31 +169,51 @@ class _IngredientFormPageState extends State<IngredientFormPage> {
                   : (unit) {
                       if (unit == null) return;
                       setState(() {
-                        final value = parseNumber(_stock.text);
-                        if (value != null && _unit.isCompatibleWith(unit)) {
-                          _stock.text = formatNumber(
-                            unit.fromBase(_unit.toBase(value)),
-                          );
-                        }
+                        _convertField(_stock, _unit, unit);
+                        _convertField(_minStock, _unit, unit);
                         _unit = unit;
                       });
                     },
             ),
             const SizedBox(height: 16),
-            TextFormField(
-              controller: _stock,
-              enabled: !_busy,
-              keyboardType: const TextInputType.numberWithOptions(
-                decimal: true,
-                signed: true,
-              ),
-              decoration: const InputDecoration(
-                labelText: 'Estoque atual',
-                helperText: 'Pode ser zero ou negativo',
-              ),
-              validator: (value) => parseNumber(value ?? '') == null
-                  ? 'Informe um número válido'
-                  : null,
+            Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Expanded(
+                  child: TextFormField(
+                    controller: _stock,
+                    enabled: !_busy,
+                    keyboardType: const TextInputType.numberWithOptions(
+                      decimal: true,
+                      signed: true,
+                    ),
+                    decoration: const InputDecoration(
+                      labelText: 'Estoque atual',
+                      helperText: 'Pode ser zero ou negativo',
+                      helperMaxLines: 2,
+                    ),
+                    validator: (value) => parseNumber(value ?? '') == null
+                        ? 'Informe um número válido'
+                        : null,
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: TextFormField(
+                    controller: _minStock,
+                    enabled: !_busy,
+                    keyboardType: const TextInputType.numberWithOptions(
+                      decimal: true,
+                    ),
+                    decoration: const InputDecoration(
+                      labelText: 'Estoque mínimo',
+                      helperText: 'Opcional: avisa quando ficar abaixo',
+                      helperMaxLines: 2,
+                    ),
+                    validator: _validateMinStock,
+                  ),
+                ),
+              ],
             ),
             if (_error != null)
               Padding(
