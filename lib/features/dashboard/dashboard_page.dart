@@ -3,8 +3,11 @@ import 'package:flutter/material.dart';
 import '../../core/format.dart';
 import '../../core/theme.dart';
 import '../../core/widgets/item_card.dart';
+import '../../core/widgets/section_title.dart';
+import '../../core/widgets/stat_card.dart';
 import '../ingredients/ingredient.dart';
 import '../production/production.dart';
+import '../production/production_form_page.dart';
 import '../production/production_repository.dart';
 import '../recipes/recipe.dart';
 import '../recipes/recipe_repository.dart';
@@ -29,7 +32,7 @@ class _DashboardData {
 }
 
 class _DashboardPageState extends State<DashboardPage> {
-  late final Future<_DashboardData> _data;
+  late Future<_DashboardData> _data;
 
   @override
   void initState() {
@@ -50,6 +53,24 @@ class _DashboardPageState extends State<DashboardPage> {
           .where((production) => toDateKey(production.date) == today)
           .toList(),
     );
+  }
+
+  void _reload() {
+    setState(() {
+      _data = _load();
+    });
+  }
+
+  Future<void> _refresh() async {
+    _reload();
+    await _data;
+  }
+
+  Future<void> _openProductionForm() async {
+    final saved = await Navigator.of(
+      context,
+    ).push<bool>(MaterialPageRoute(builder: (_) => const ProductionFormPage()));
+    if (saved == true) _reload();
   }
 
   @override
@@ -93,8 +114,10 @@ class _DashboardPageState extends State<DashboardPage> {
   }
 
   Widget _buildContent(_DashboardData data) {
-    final missing = data.ingredients.where((item) => item.isOutOfStock);
-    final low = data.ingredients.where((item) => item.isLowStock);
+    final missing = data.ingredients
+        .where((item) => item.isOutOfStock)
+        .toList();
+    final low = data.ingredients.where((item) => item.isLowStock).toList();
     final ingredientCount = data.ingredients
         .where((item) => !item.isPreparation)
         .length;
@@ -102,83 +125,159 @@ class _DashboardPageState extends State<DashboardPage> {
         .where((recipe) => recipe.isPreparation)
         .length;
     final recipeCount = data.recipes.length - preparationCount;
+    final today = data.todayProductions;
 
-    return ListView(
-      padding: const EdgeInsets.only(bottom: AppSpacing.lg),
-      children: [
-        Padding(
-          padding: const EdgeInsets.symmetric(horizontal: AppSpacing.sm),
-          child: Row(
-            children: [
-              _TotalCard(label: 'Ingredientes', value: ingredientCount),
-              _TotalCard(label: 'Preparos', value: preparationCount),
-              _TotalCard(label: 'Receitas', value: recipeCount),
-            ],
+    return RefreshIndicator(
+      onRefresh: _refresh,
+      child: ListView(
+        physics: const AlwaysScrollableScrollPhysics(),
+        padding: const EdgeInsets.only(bottom: AppSpacing.lg),
+        children: [
+          const _Greeting(),
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md),
+            child: FilledButton.icon(
+              onPressed: _openProductionForm,
+              icon: const Icon(Icons.add_circle_outline),
+              label: const Text('Registrar produção'),
+              style: FilledButton.styleFrom(
+                minimumSize: const Size.fromHeight(AppSizes.buttonHeight),
+              ),
+            ),
           ),
-        ),
-        const _SectionTitle('Em falta'),
-        if (missing.isEmpty) const _EmptyLine('Nada em falta'),
-        for (final item in missing)
-          _StockCard(item: item, badge: 'Sem estoque'),
-        const _SectionTitle('Abaixo do mínimo'),
-        if (low.isEmpty) const _EmptyLine('Nada abaixo do mínimo'),
-        for (final item in low) _StockCard(item: item, badge: 'Estoque baixo'),
-        const _SectionTitle('Produções de hoje'),
-        if (data.todayProductions.isEmpty)
-          const _EmptyLine('Nenhuma produção hoje'),
-        for (final production in data.todayProductions)
-          ItemCard(
-            icon: Icons.soup_kitchen_outlined,
-            title: production.recipeName,
-            subtitle: formatTime(production.createdAt),
-            trailing: formatQuantity(production.quantity, production.unit),
+          const SizedBox(height: AppSpacing.sm),
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md - 4),
+            child: Column(
+              children: [
+                Row(
+                  children: [
+                    Expanded(
+                      child: StatCard(
+                        icon: Icons.inventory_2_outlined,
+                        label: 'Ingredientes',
+                        value: '$ingredientCount',
+                      ),
+                    ),
+                    Expanded(
+                      child: StatCard(
+                        icon: Icons.blender_outlined,
+                        label: 'Preparos',
+                        value: '$preparationCount',
+                        color: AppColors.navigationSelected,
+                      ),
+                    ),
+                  ],
+                ),
+                Row(
+                  children: [
+                    Expanded(
+                      child: StatCard(
+                        icon: Icons.menu_book_outlined,
+                        label: 'Receitas',
+                        value: '$recipeCount',
+                        color: AppColors.quantity,
+                      ),
+                    ),
+                    Expanded(
+                      child: StatCard(
+                        icon: Icons.soup_kitchen_outlined,
+                        label: 'Produções hoje',
+                        value: '${today.length}',
+                        color: AppColors.success,
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ),
           ),
-      ],
+          SectionTitle('Em falta', trailing: _countLabel(missing.length)),
+          if (missing.isEmpty)
+            const _StatusLine('Tudo certo! Nada em falta')
+          else
+            for (final item in missing)
+              _StockCard(item: item, alert: true, badge: 'Sem estoque'),
+          SectionTitle('Abaixo do mínimo', trailing: _countLabel(low.length)),
+          if (low.isEmpty)
+            const _StatusLine('Nada abaixo do mínimo')
+          else
+            for (final item in low)
+              _StockCard(item: item, alert: false, badge: 'Estoque baixo'),
+          SectionTitle(
+            'Produções de hoje',
+            trailing: today.isEmpty ? null : '${today.length}',
+          ),
+          if (today.isEmpty)
+            const _StatusLine('Nada produzido hoje ainda', ok: false)
+          else
+            for (final production in today)
+              ItemCard(
+                icon: Icons.soup_kitchen_outlined,
+                title: production.recipeName,
+                subtitle: formatTime(production.createdAt),
+                trailing: formatQuantity(production.quantity, production.unit),
+              ),
+        ],
+      ),
     );
+  }
+
+  String? _countLabel(int count) {
+    if (count == 0) return null;
+    return count == 1 ? '1 item' : '$count itens';
   }
 }
 
-class _TotalCard extends StatelessWidget {
-  const _TotalCard({required this.label, required this.value});
-
-  final String label;
-  final int value;
+class _Greeting extends StatelessWidget {
+  const _Greeting();
 
   @override
   Widget build(BuildContext context) {
     final textTheme = Theme.of(context).textTheme;
-    return Expanded(
-      child: Card(
-        margin: const EdgeInsets.all(AppSpacing.xs),
-        child: Padding(
-          padding: const EdgeInsets.symmetric(vertical: AppSpacing.md),
-          child: Column(
-            children: [
-              Text(
-                '$value',
-                style: textTheme.headlineSmall?.copyWith(
-                  color: AppColors.quantity,
-                  fontWeight: FontWeight.w700,
-                ),
-              ),
-              Text(
-                label,
-                style: textTheme.bodySmall?.copyWith(
-                  color: AppColors.textSecondary,
-                ),
-              ),
-            ],
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(
+        AppSpacing.md,
+        AppSpacing.xs,
+        AppSpacing.md,
+        AppSpacing.md,
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            'Olá!',
+            style: textTheme.headlineSmall?.copyWith(
+              color: AppColors.title,
+              fontWeight: FontWeight.w700,
+            ),
           ),
-        ),
+          Text(
+            'Veja o resumo do seu estoque',
+            style: textTheme.bodyMedium?.copyWith(
+              color: AppColors.textSecondary,
+            ),
+          ),
+          const SizedBox(height: 2),
+          Text(
+            formatLongDate(DateTime.now()),
+            style: textTheme.labelMedium?.copyWith(color: AppColors.primary),
+          ),
+        ],
       ),
     );
   }
 }
 
 class _StockCard extends StatelessWidget {
-  const _StockCard({required this.item, required this.badge});
+  const _StockCard({
+    required this.item,
+    required this.alert,
+    required this.badge,
+  });
 
   final Ingredient item;
+  final bool alert;
   final String badge;
 
   @override
@@ -190,52 +289,47 @@ class _StockCard extends StatelessWidget {
       title: item.name,
       subtitle: item.isPreparation ? 'Preparo' : item.brand,
       trailing: formatQuantity(item.stock, item.unit),
-      alert: true,
+      alert: alert,
+      warning: !alert,
       badge: badge,
     );
   }
 }
 
-class _SectionTitle extends StatelessWidget {
-  const _SectionTitle(this.text);
+class _StatusLine extends StatelessWidget {
+  const _StatusLine(this.text, {this.ok = true});
 
   final String text;
+  final bool ok;
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(
-        AppSpacing.md,
-        AppSpacing.lg,
-        AppSpacing.md,
-        AppSpacing.xs,
-      ),
-      child: Text(
-        text,
-        style: theme.textTheme.titleSmall?.copyWith(
-          color: theme.colorScheme.primary,
-        ),
-      ),
-    );
-  }
-}
-
-class _EmptyLine extends StatelessWidget {
-  const _EmptyLine(this.text);
-
-  final String text;
-
-  @override
-  Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(
+    final color = ok ? AppColors.success : AppColors.textSecondary;
+    return Container(
+      margin: const EdgeInsets.symmetric(
         horizontal: AppSpacing.md,
         vertical: AppSpacing.xs,
       ),
-      child: Text(
-        text,
-        style: const TextStyle(color: AppColors.textSecondary),
+      padding: const EdgeInsets.all(AppSpacing.md - 4),
+      decoration: BoxDecoration(
+        color: ok ? AppColors.successBackground : AppColors.surface,
+        borderRadius: BorderRadius.circular(AppRadius.md),
+      ),
+      child: Row(
+        children: [
+          Icon(
+            ok ? Icons.check_circle_outline : Icons.info_outline,
+            color: color,
+            size: 20,
+          ),
+          const SizedBox(width: AppSpacing.sm),
+          Expanded(
+            child: Text(
+              text,
+              style: TextStyle(color: color, fontWeight: FontWeight.w600),
+            ),
+          ),
+        ],
       ),
     );
   }
