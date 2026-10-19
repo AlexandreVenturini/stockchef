@@ -87,3 +87,11 @@ class ProductionItem {
     };
   }
 }
+
+Map<DateTime, List<Production>> groupByDay(List<Production> productions) {
+  final days = <DateTime, List<Production>>{};
+  for (final production in productions) {
+    days.putIfAbsent(production.date, () => []).add(production);
+  }
+  return days;
+}
