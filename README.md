@@ -104,3 +104,14 @@ Exemplo: a receita rende 1 kg com 600 g de morango. Produzindo 2,5 kg, o fator �
 - Se faltar ingrediente, o app avisa e pede confirmação. Se confirmar, o estoque fica negativo e aparece em vermelho.
 - Cada produção guarda o que consumiu, então o histórico não muda se a receita for editada depois.
 - Excluir uma produção devolve os ingredientes ao estoque.
+
+## Pacotes utilizados
+
+| Pacote | Para quê |
+|---|---|
+| [sqflite](https://pub.dev/packages/sqflite) | Banco de dados SQLite no Android |
+| [sqflite_common_ffi](https://pub.dev/packages/sqflite_common_ffi) | O mesmo banco SQLite no Windows |
+| [path](https://pub.dev/packages/path) | Montar o caminho do arquivo do banco |
+| [intl](https://pub.dev/packages/intl) | Formatar datas e números no padrão brasileiro |
+| flutter_localizations (Flutter SDK) | Textos padrão do Flutter, como o calendário, em português |
+| [flutter_lints](https://pub.dev/packages/flutter_lints) | Regras de boas práticas na análise do código (desenvolvimento) |
