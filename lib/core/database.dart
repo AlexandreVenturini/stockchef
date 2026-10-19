@@ -1,5 +1,6 @@
 import 'dart:io';
 
+import 'package:flutter/foundation.dart';
 import 'package:path/path.dart';
 import 'package:sqflite/sqflite.dart';
 import 'package:sqflite_common_ffi/sqflite_ffi.dart';
@@ -15,6 +16,11 @@ class AppDatabase {
   static Future<Database>? _opening;
 
   static Future<Database> get instance => _opening ??= _open();
+
+  @visibleForTesting
+  static void useForTesting(Database? database) {
+    _opening = database == null ? null : Future.value(database);
+  }
 
   static OpenDatabaseOptions get options => OpenDatabaseOptions(
     version: version,
