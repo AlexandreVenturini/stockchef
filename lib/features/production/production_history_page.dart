@@ -2,7 +2,10 @@ import 'package:flutter/material.dart';
 
 import '../../core/format.dart';
 import '../../core/theme.dart';
+import '../../core/widgets/empty_state.dart';
 import '../../core/widgets/item_card.dart';
+import '../../core/widgets/search_field.dart';
+import '../../core/widgets/section_title.dart';
 import 'production.dart';
 import 'production_detail_page.dart';
 import 'production_form_page.dart';
@@ -18,6 +21,7 @@ class ProductionHistoryPage extends StatefulWidget {
 class _ProductionHistoryPageState extends State<ProductionHistoryPage> {
   final _repository = ProductionRepository();
   late Future<List<Production>> _history;
+  String _query = '';
 
   @override
   void initState() {
@@ -41,9 +45,9 @@ class _ProductionHistoryPageState extends State<ProductionHistoryPage> {
   }
 
   Future<void> _openForm() async {
-    final saved = await Navigator.of(context).push<bool>(
-      MaterialPageRoute(builder: (_) => const ProductionFormPage()),
-    );
+    final saved = await Navigator.of(
+      context,
+    ).push<bool>(MaterialPageRoute(builder: (_) => const ProductionFormPage()));
     if (saved == true) _reload();
   }
 
@@ -74,59 +78,64 @@ class _ProductionHistoryPageState extends State<ProductionHistoryPage> {
 
           final productions = snapshot.data!;
           if (productions.isEmpty) {
-            return const Center(
-              child: Text(
-                'Nenhuma produção registrada\nToque em + para registrar',
-                textAlign: TextAlign.center,
-              ),
+            return EmptyState(
+              icon: Icons.soup_kitchen_outlined,
+              title: 'Nenhuma produção registrada',
+              message:
+                  'Registre o que foi produzido e o estoque é atualizado sozinho',
+              actionLabel: 'Registrar primeira produção',
+              onAction: _openForm,
             );
           }
 
-          final days = groupByDay(productions);
-          return ListView(
+          final filtered = productions
+              .where(
+                (production) => matchesSearch(production.recipeName, _query),
+              )
+              .toList();
+          final days = groupByDay(filtered);
+          return Column(
             children: [
-              for (final day in days.entries) ...[
-                _DayHeader(day: day.key),
-                for (final production in day.value)
-                  ItemCard(
-                    icon: Icons.soup_kitchen_outlined,
-                    title: production.recipeName,
-                    subtitle: formatTime(production.createdAt),
-                    trailing: formatQuantity(
-                      production.quantity,
-                      production.unit,
-                    ),
-                    onTap: () => _openDetail(production),
-                  ),
-              ],
+              SearchField(
+                hint: 'Buscar produções',
+                onChanged: (text) => setState(() {
+                  _query = text;
+                }),
+              ),
+              Expanded(
+                child: filtered.isEmpty
+                    ? const EmptyState(
+                        icon: Icons.search_off,
+                        title: 'Nenhuma produção encontrada',
+                      )
+                    : ListView(
+                        padding: const EdgeInsets.only(bottom: AppSpacing.lg),
+                        children: [
+                          for (final day in days.entries) ...[
+                            SectionTitle(
+                              formatDayLabel(day.key),
+                              trailing: day.value.length == 1
+                                  ? '1 produção'
+                                  : '${day.value.length} produções',
+                            ),
+                            for (final production in day.value)
+                              ItemCard(
+                                icon: Icons.soup_kitchen_outlined,
+                                title: production.recipeName,
+                                subtitle: formatTime(production.createdAt),
+                                trailing: formatQuantity(
+                                  production.quantity,
+                                  production.unit,
+                                ),
+                                onTap: () => _openDetail(production),
+                              ),
+                          ],
+                        ],
+                      ),
+              ),
             ],
           );
         },
-      ),
-    );
-  }
-}
-
-class _DayHeader extends StatelessWidget {
-  const _DayHeader({required this.day});
-
-  final DateTime day;
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(
-        AppSpacing.md,
-        AppSpacing.lg,
-        AppSpacing.md,
-        AppSpacing.xs,
-      ),
-      child: Text(
-        formatDayLabel(day),
-        style: theme.textTheme.titleSmall?.copyWith(
-          color: theme.colorScheme.primary,
-        ),
       ),
     );
   }
