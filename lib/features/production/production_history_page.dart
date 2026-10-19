@@ -4,6 +4,7 @@ import '../../core/format.dart';
 import '../../core/theme.dart';
 import 'production.dart';
 import 'production_detail_page.dart';
+import 'production_form_page.dart';
 import 'production_repository.dart';
 
 class ProductionHistoryPage extends StatefulWidget {
@@ -38,10 +39,26 @@ class _ProductionHistoryPageState extends State<ProductionHistoryPage> {
     if (deleted == true) _reload();
   }
 
+  Future<void> _openForm() async {
+    final saved = await Navigator.of(context).push<bool>(
+      MaterialPageRoute(builder: (_) => const ProductionFormPage()),
+    );
+    if (saved == true) _reload();
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('Produção')),
+      appBar: AppBar(
+        title: const Text('Produção'),
+        actions: [
+          IconButton(
+            tooltip: 'Registrar produção',
+            icon: const Icon(Icons.add),
+            onPressed: _openForm,
+          ),
+        ],
+      ),
       body: FutureBuilder<List<Production>>(
         future: _history,
         builder: (context, snapshot) {
@@ -56,7 +73,12 @@ class _ProductionHistoryPageState extends State<ProductionHistoryPage> {
 
           final productions = snapshot.data!;
           if (productions.isEmpty) {
-            return const Center(child: Text('Nenhuma produção registrada'));
+            return const Center(
+              child: Text(
+                'Nenhuma produção registrada\nToque em + para registrar',
+                textAlign: TextAlign.center,
+              ),
+            );
           }
 
           final days = groupByDay(productions);
