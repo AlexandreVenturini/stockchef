@@ -310,7 +310,9 @@ class _RecipeFormPageState extends State<RecipeFormPage> {
               padding: const EdgeInsets.all(AppSpacing.md),
               children: [
                 FormSection(
-                  title: 'Dados do $_kind',
+                  title: _isPreparation
+                      ? 'Dados do preparo'
+                      : 'Dados da receita',
                   children: [
                     TextFormField(
                       controller: _nameController,
