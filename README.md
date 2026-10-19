@@ -65,12 +65,12 @@ Cada funcionalidade tem:
 
 Ninguém faz commit direto na `main`. Cada pessoa trabalha numa branch própria e envia para a `main` por Pull Request (PR).
 
-**1. Criar sua branch** (uma por funcionalidade, no formato `nome/funcionalidade`):
+**1. Criar sua branch** (uma por funcionalidade, com o nome do que está sendo feito, sem nome de pessoa):
 
 ```bash
 git switch main
 git pull
-git switch -c julia/ingredientes
+git switch -c cadastro-ingredientes
 ```
 
 **2. Trabalhar e fazer commits pequenos**, com mensagem em português dizendo o que foi feito:
@@ -83,7 +83,7 @@ git commit -m "Adiciona lista de ingredientes"
 **3. Enviar a branch** (na primeira vez; depois basta `git push`):
 
 ```bash
-git push -u origin julia/ingredientes
+git push -u origin cadastro-ingredientes
 ```
 
 **4. Abrir o Pull Request** no GitHub, da sua branch para a `main`. Antes, confira se `flutter analyze` e `flutter test` passam. O Alexandre testa e faz o merge.
