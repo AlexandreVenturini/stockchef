@@ -33,7 +33,7 @@ void main() {
     await tester.pumpWidget(const StockChefApp());
 
     await tester.tap(tab('Receitas'));
-    await tester.pumpAndSettle();
+    await pumpAndLoad(tester);
     expect(find.byType(RecipesPage), findsOneWidget);
     expect(find.byType(IngredientsPage), findsNothing);
 
