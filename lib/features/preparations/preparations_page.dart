@@ -1,7 +1,10 @@
 import 'package:flutter/material.dart';
 
 import '../../core/format.dart';
+import '../../core/theme.dart';
+import '../../core/widgets/empty_state.dart';
 import '../../core/widgets/item_card.dart';
+import '../../core/widgets/search_field.dart';
 import '../recipes/recipe.dart';
 import '../recipes/recipe_form_page.dart';
 import 'preparation.dart';
@@ -17,6 +20,7 @@ class PreparationsPage extends StatefulWidget {
 class _PreparationsPageState extends State<PreparationsPage> {
   final _repository = PreparationRepository();
   late Future<List<Preparation>> _preparations;
+  String _query = '';
 
   @override
   void initState() {
@@ -66,40 +70,75 @@ class _PreparationsPageState extends State<PreparationsPage> {
 
           final preparations = snapshot.data!;
           if (preparations.isEmpty) {
-            return const Center(
-              child: Text(
-                'Nenhum preparo cadastrado\nToque em + para cadastrar',
-                textAlign: TextAlign.center,
-              ),
+            return EmptyState(
+              icon: Icons.blender_outlined,
+              title: 'Nenhum preparo cadastrado',
+              message:
+                  'Preparos são bases feitas antes, como caldas e massas, '
+                  'que entram em outras receitas',
+              actionLabel: 'Cadastrar primeiro preparo',
+              onAction: _openForm,
             );
           }
 
-          return ListView(
+          final filtered = preparations
+              .where((item) => matchesSearch(item.recipe.name, _query))
+              .toList();
+          return Column(
             children: [
-              for (final preparation in preparations)
-                ItemCard(
-                  icon: Icons.blender_outlined,
-                  title: preparation.recipe.name,
-                  subtitle:
-                      'Rende ${formatQuantity(preparation.recipe.yieldQuantity, preparation.recipe.yieldUnit)}',
-                  trailing: formatQuantity(
-                    preparation.stockItem.stock,
-                    preparation.stockItem.unit,
-                  ),
-                  alert:
-                      preparation.stockItem.isOutOfStock ||
-                      preparation.stockItem.isLowStock,
-                  badge: preparation.stockItem.isOutOfStock
-                      ? 'Sem estoque'
-                      : (preparation.stockItem.isLowStock
-                            ? 'Estoque baixo'
-                            : null),
-                  onTap: () => _openForm(preparation.recipe),
-                ),
+              SearchField(
+                hint: 'Buscar preparos',
+                onChanged: (text) => setState(() {
+                  _query = text;
+                }),
+              ),
+              Expanded(
+                child: filtered.isEmpty
+                    ? const EmptyState(
+                        icon: Icons.search_off,
+                        title: 'Nenhum preparo encontrado',
+                      )
+                    : ListView(
+                        padding: const EdgeInsets.only(bottom: AppSpacing.lg),
+                        children: [
+                          for (final preparation in filtered)
+                            _PreparationCard(
+                              preparation: preparation,
+                              onTap: () => _openForm(preparation.recipe),
+                            ),
+                        ],
+                      ),
+              ),
             ],
           );
         },
       ),
+    );
+  }
+}
+
+class _PreparationCard extends StatelessWidget {
+  const _PreparationCard({required this.preparation, required this.onTap});
+
+  final Preparation preparation;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final recipe = preparation.recipe;
+    final stock = preparation.stockItem;
+    return ItemCard(
+      icon: Icons.blender_outlined,
+      title: recipe.name,
+      subtitle:
+          'Rendimento: ${formatQuantity(recipe.yieldQuantity, recipe.yieldUnit)}',
+      trailing: formatQuantity(stock.stock, stock.unit),
+      alert: stock.isOutOfStock,
+      warning: stock.isLowStock,
+      badge: stock.isOutOfStock
+          ? 'Sem estoque'
+          : (stock.isLowStock ? 'Estoque baixo' : null),
+      onTap: onTap,
     );
   }
 }
