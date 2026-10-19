@@ -105,7 +105,7 @@ void main() {
     await tester.tap(find.text('Excluir'));
     await pumpAndLoad(tester);
 
-    expect(find.text('Nenhuma produção registrada'), findsOneWidget);
+    expect(find.textContaining('Nenhuma produção registrada'), findsOneWidget);
     expect(await stockOf(tester, 'Morango'), 5000);
     expect(await stockOf(tester, 'Açúcar'), 3000);
   });

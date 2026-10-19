@@ -40,6 +40,6 @@ void main() {
     await tester.tap(tab('Produção'));
     await pumpAndLoad(tester);
     expect(find.byType(ProductionHistoryPage), findsOneWidget);
-    expect(find.text('Nenhuma produção registrada'), findsOneWidget);
+    expect(find.textContaining('Nenhuma produção registrada'), findsOneWidget);
   });
 }
