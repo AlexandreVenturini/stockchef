@@ -13,6 +13,10 @@ abstract final class AppColors {
   static const border = Color(0xFFD3E2EF);
   static const alert = Color(0xFFBB2527);
   static const alertBackground = Color(0xFFF5E0DF);
+  static const warning = Color(0xFFB45F06);
+  static const warningBackground = Color(0xFFFCEFD9);
+  static const success = Color(0xFF2E7D4F);
+  static const successBackground = Color(0xFFE2F3E8);
   static const navigationBar = Color(0xFFF1F6FC);
   static const navigationSelected = Color(0xFF326384);
 }
@@ -137,6 +141,19 @@ ThemeData buildAppTheme() {
       backgroundColor: AppColors.surface,
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(AppRadius.lg),
+      ),
+    ),
+    floatingActionButtonTheme: const FloatingActionButtonThemeData(
+      backgroundColor: AppColors.primary,
+      foregroundColor: Colors.white,
+      shape: pill,
+      extendedTextStyle: TextStyle(fontSize: 16, fontWeight: FontWeight.w700),
+    ),
+    snackBarTheme: SnackBarThemeData(
+      behavior: SnackBarBehavior.floating,
+      backgroundColor: AppColors.title,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(AppRadius.md),
       ),
     ),
   );
