@@ -16,8 +16,15 @@ class Consumption {
 }
 
 class ProductionPlan {
-  const ProductionPlan({required this.factor, required this.consumptions});
+  const ProductionPlan({
+    required this.recipe,
+    required this.producedQuantity,
+    required this.factor,
+    required this.consumptions,
+  });
 
+  final Recipe recipe;
+  final double producedQuantity;
   final double factor;
   final List<Consumption> consumptions;
 
@@ -58,5 +65,10 @@ ProductionPlan planProduction({
     );
   }).toList();
 
-  return ProductionPlan(factor: factor, consumptions: consumptions);
+  return ProductionPlan(
+    recipe: recipe,
+    producedQuantity: producedQuantity,
+    factor: factor,
+    consumptions: consumptions,
+  );
 }
