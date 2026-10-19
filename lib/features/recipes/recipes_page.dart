@@ -53,7 +53,9 @@ class _RecipesPageState extends State<RecipesPage> {
             return const Center(child: CircularProgressIndicator());
           }
 
-          final recipes = snapshot.data!;
+          final recipes = snapshot.data!
+              .where((recipe) => !recipe.isPreparation)
+              .toList();
           if (recipes.isEmpty) {
             return const Center(child: Text('Nenhuma receita cadastrada'));
           }
