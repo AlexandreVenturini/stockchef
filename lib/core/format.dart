@@ -30,6 +30,11 @@ DateTime fromDateKey(String key) => _dateKeyFormat.parse(key);
 
 String formatTime(DateTime dateTime) => _timeFormat.format(dateTime);
 
+String formatLongDate(DateTime date) {
+  final text = DateFormat("EEEE, d 'de' MMMM", 'pt_BR').format(date);
+  return text[0].toUpperCase() + text.substring(1);
+}
+
 String formatDayLabel(DateTime day, {DateTime? today}) {
   final now = today ?? DateTime.now();
   final target = DateTime(day.year, day.month, day.day);
