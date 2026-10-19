@@ -36,6 +36,8 @@ void main() {
       ingredients: [strawberry, sugar],
     );
 
+    expect(plan.recipe.name, 'Calda de morango');
+    expect(plan.producedQuantity, 2500);
     expect(plan.factor, 2.5);
     expect(consumed(plan, strawberry), 1500);
     expect(consumed(plan, sugar), 1000);
