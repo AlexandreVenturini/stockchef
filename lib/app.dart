@@ -3,6 +3,7 @@ import 'package:flutter_localizations/flutter_localizations.dart';
 
 import 'core/theme.dart';
 import 'features/ingredients/ingredients_page.dart';
+import 'features/preparations/preparations_page.dart';
 import 'features/production/production_history_page.dart';
 import 'features/recipes/recipes_page.dart';
 
@@ -35,6 +36,7 @@ class _HomePageState extends State<HomePage> {
 
   static const _pages = [
     IngredientsPage(),
+    PreparationsPage(),
     RecipesPage(),
     ProductionHistoryPage(),
   ];
@@ -53,6 +55,11 @@ class _HomePageState extends State<HomePage> {
             icon: Icon(Icons.inventory_2_outlined),
             selectedIcon: Icon(Icons.inventory_2),
             label: 'Ingredientes',
+          ),
+          NavigationDestination(
+            icon: Icon(Icons.blender_outlined),
+            selectedIcon: Icon(Icons.blender),
+            label: 'Preparos',
           ),
           NavigationDestination(
             icon: Icon(Icons.menu_book_outlined),

@@ -51,6 +51,21 @@ class ProductionRepository {
         );
       }
 
+      final outputId = plan.recipe.outputIngredientId;
+      if (outputId != null) {
+        final output = ProductionItem(
+          ingredientId: outputId,
+          ingredientName: plan.recipe.name,
+          quantity: -plan.producedQuantity,
+          unit: plan.recipe.yieldUnit,
+        );
+        await txn.insert('production_items', output.toMap(productionId));
+        await txn.rawUpdate(
+          'UPDATE ingredients SET stock = ROUND(stock + ?, 3) WHERE id = ?',
+          [plan.producedQuantity, outputId],
+        );
+      }
+
       return productionId;
     });
   }
