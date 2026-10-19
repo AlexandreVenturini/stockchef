@@ -5,6 +5,7 @@ import '../../core/format.dart';
 import '../../core/theme.dart';
 import '../../core/units.dart';
 import '../ingredients/ingredient.dart';
+import '../preparations/preparation_repository.dart';
 import 'recipe.dart';
 import 'recipe_repository.dart';
 
@@ -12,9 +13,10 @@ import 'recipe_repository.dart';
 /// Sem [recipe] cria uma nova; com [recipe] edita a existente.
 /// Fecha com `true` quando algo foi salvo ou excluído.
 class RecipeFormPage extends StatefulWidget {
-  const RecipeFormPage({super.key, this.recipe});
+  const RecipeFormPage({super.key, this.recipe, this.isPreparation = false});
 
   final Recipe? recipe;
+  final bool isPreparation;
 
   @override
   State<RecipeFormPage> createState() => _RecipeFormPageState();
@@ -34,6 +36,7 @@ class _ItemDraft {
 
 class _RecipeFormPageState extends State<RecipeFormPage> {
   final _repository = RecipeRepository();
+  final _preparationRepository = PreparationRepository();
   final _formKey = GlobalKey<FormState>();
   final _nameController = TextEditingController();
   final _yieldController = TextEditingController();
@@ -45,6 +48,20 @@ class _RecipeFormPageState extends State<RecipeFormPage> {
   bool _saving = false;
 
   bool get _isEditing => widget.recipe != null;
+
+  bool get _isPreparation =>
+      widget.isPreparation || (widget.recipe?.isPreparation ?? false);
+
+  String get _kind => _isPreparation ? 'preparo' : 'receita';
+
+  List<Unit> get _yieldUnits => _isPreparation && _isEditing
+      ? widget.recipe!.yieldUnit.compatibleUnits
+      : Unit.values;
+
+  List<Ingredient> _selectable(List<Ingredient> all) {
+    final ownStock = widget.recipe?.outputIngredientId;
+    return all.where((ingredient) => ingredient.id != ownStock).toList();
+  }
 
   @override
   void initState() {
@@ -128,9 +145,9 @@ class _RecipeFormPageState extends State<RecipeFormPage> {
       for (final other in _items)
         if (other != item && other.ingredient != null) other.ingredient!.id,
     };
-    return all
-        .where((ingredient) => !usedElsewhere.contains(ingredient.id))
-        .toList();
+    return _selectable(
+      all,
+    ).where((ingredient) => !usedElsewhere.contains(ingredient.id)).toList();
   }
 
   String? _validateQuantity(String? text, Unit unit) {
@@ -168,12 +185,16 @@ class _RecipeFormPageState extends State<RecipeFormPage> {
 
     setState(() => _saving = true);
     try {
-      await _repository.save(recipe);
+      if (_isPreparation) {
+        await _preparationRepository.save(recipe);
+      } else {
+        await _repository.save(recipe);
+      }
     } catch (_) {
       if (!mounted) return;
       setState(() => _saving = false);
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Não foi possível salvar a receita')),
+        SnackBar(content: Text('Não foi possível salvar o $_kind')),
       );
       return;
     }
@@ -185,7 +206,7 @@ class _RecipeFormPageState extends State<RecipeFormPage> {
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text('Excluir receita?'),
+        title: Text('Excluir $_kind?'),
         content: const Text(
           'As produções já registradas continuam no histórico.',
         ),
@@ -205,12 +226,22 @@ class _RecipeFormPageState extends State<RecipeFormPage> {
 
     setState(() => _saving = true);
     try {
-      await _repository.delete(widget.recipe!.id!);
+      if (_isPreparation) {
+        await _preparationRepository.delete(widget.recipe!);
+      } else {
+        await _repository.delete(widget.recipe!.id!);
+      }
     } catch (_) {
       if (!mounted) return;
       setState(() => _saving = false);
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Não foi possível excluir a receita')),
+        SnackBar(
+          content: Text(
+            _isPreparation
+                ? 'Não foi possível excluir: o preparo é usado em alguma receita'
+                : 'Não foi possível excluir a receita',
+          ),
+        ),
       );
       return;
     }
@@ -222,11 +253,15 @@ class _RecipeFormPageState extends State<RecipeFormPage> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text(_isEditing ? 'Editar receita' : 'Nova receita'),
+        title: Text(
+          _isEditing
+              ? 'Editar $_kind'
+              : (_isPreparation ? 'Novo preparo' : 'Nova receita'),
+        ),
         actions: [
           if (_isEditing)
             IconButton(
-              tooltip: 'Excluir receita',
+              tooltip: 'Excluir $_kind',
               icon: const Icon(Icons.delete_outline),
               onPressed: _saving ? null : _confirmDelete,
             ),
@@ -253,12 +288,12 @@ class _RecipeFormPageState extends State<RecipeFormPage> {
     final theme = Theme.of(context);
 
     if (ingredients.isEmpty) {
-      return const Center(
+      return Center(
         child: Padding(
-          padding: EdgeInsets.all(AppSpacing.lg),
+          padding: const EdgeInsets.all(AppSpacing.lg),
           child: Text(
             'Cadastre ao menos um ingrediente na aba Ingredientes '
-            'antes de criar uma receita',
+            'antes de criar ${_isPreparation ? 'um preparo' : 'uma receita'}',
             textAlign: TextAlign.center,
           ),
         ),
@@ -276,11 +311,15 @@ class _RecipeFormPageState extends State<RecipeFormPage> {
                 TextFormField(
                   controller: _nameController,
                   textCapitalization: TextCapitalization.sentences,
-                  decoration: const InputDecoration(
-                    labelText: 'Nome da receita',
+                  decoration: InputDecoration(
+                    labelText: _isPreparation
+                        ? 'Nome do preparo'
+                        : 'Nome da receita',
                   ),
                   validator: (text) => (text ?? '').trim().isEmpty
-                      ? 'Informe o nome da receita'
+                      ? (_isPreparation
+                            ? 'Informe o nome do preparo'
+                            : 'Informe o nome da receita')
                       : null,
                 ),
                 const SizedBox(height: AppSpacing.md),
@@ -308,7 +347,7 @@ class _RecipeFormPageState extends State<RecipeFormPage> {
                         initialValue: _yieldUnit,
                         decoration: const InputDecoration(labelText: 'Unidade'),
                         items: [
-                          for (final unit in Unit.values)
+                          for (final unit in _yieldUnits)
                             DropdownMenuItem(
                               value: unit,
                               child: Text(unit.label),
@@ -341,7 +380,7 @@ class _RecipeFormPageState extends State<RecipeFormPage> {
                 Align(
                   alignment: Alignment.centerLeft,
                   child: TextButton.icon(
-                    onPressed: _items.length >= ingredients.length
+                    onPressed: _items.length >= _selectable(ingredients).length
                         ? null
                         : _addItem,
                     icon: const Icon(Icons.add),
@@ -356,7 +395,7 @@ class _RecipeFormPageState extends State<RecipeFormPage> {
               padding: const EdgeInsets.all(AppSpacing.md),
               child: FilledButton(
                 onPressed: _saving ? null : _save,
-                child: const Text('Salvar receita'),
+                child: Text('Salvar $_kind'),
               ),
             ),
           ),
@@ -388,7 +427,9 @@ class _RecipeFormPageState extends State<RecipeFormPage> {
                         DropdownMenuItem(
                           value: option.id,
                           child: Text(
-                            option.name,
+                            option.isPreparation
+                                ? '${option.name} (preparo)'
+                                : option.name,
                             overflow: TextOverflow.ellipsis,
                           ),
                         ),
