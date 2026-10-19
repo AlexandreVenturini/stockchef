@@ -38,13 +38,13 @@ ThemeData buildAppTheme() {
     ),
     filledButtonTheme: FilledButtonThemeData(
       style: FilledButton.styleFrom(
-        minimumSize: const Size.fromHeight(AppSizes.buttonHeight),
+        minimumSize: const Size(64, AppSizes.buttonHeight),
         shape: shape,
       ),
     ),
     outlinedButtonTheme: OutlinedButtonThemeData(
       style: OutlinedButton.styleFrom(
-        minimumSize: const Size.fromHeight(AppSizes.buttonHeight),
+        minimumSize: const Size(64, AppSizes.buttonHeight),
         shape: shape,
       ),
     ),
