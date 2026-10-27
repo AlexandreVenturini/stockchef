@@ -10,7 +10,7 @@ class RecipeRepository {
 
   final Future<Database> _database;
 
-  /// Todas as receitas, em ordem alfabética, já com seus itens.
+  /// Todas as receitas, em ordem alfabética, já com seus itens e etapas.
   Future<List<Recipe>> getAll() async {
     final db = await _database;
     final recipeRows = await db.query(
@@ -18,6 +18,7 @@ class RecipeRepository {
       orderBy: 'name COLLATE NOCASE',
     );
     final itemRows = await db.query('recipe_items', orderBy: 'id');
+    final stepRows = await db.query('recipe_steps', orderBy: 'position');
 
     final itemsByRecipe = <int, List<RecipeItem>>{};
     for (final row in itemRows) {
@@ -25,11 +26,20 @@ class RecipeRepository {
           .putIfAbsent(row['recipe_id'] as int, () => [])
           .add(RecipeItem.fromMap(row));
     }
+    final stepsByRecipe = <int, List<RecipeStep>>{};
+    for (final row in stepRows) {
+      stepsByRecipe
+          .putIfAbsent(row['recipe_id'] as int, () => [])
+          .add(RecipeStep.fromMap(row));
+    }
 
     return recipeRows
         .map(
-          (row) =>
-              Recipe.fromMap(row, items: itemsByRecipe[row['id']] ?? const []),
+          (row) => Recipe.fromMap(
+            row,
+            items: itemsByRecipe[row['id']] ?? const [],
+            steps: stepsByRecipe[row['id']] ?? const [],
+          ),
         )
         .toList();
   }
@@ -44,14 +54,21 @@ class RecipeRepository {
       whereArgs: [id],
       orderBy: 'id',
     );
+    final stepRows = await db.query(
+      'recipe_steps',
+      where: 'recipe_id = ?',
+      whereArgs: [id],
+      orderBy: 'position',
+    );
     return Recipe.fromMap(
       rows.single,
       items: itemRows.map(RecipeItem.fromMap).toList(),
+      steps: stepRows.map(RecipeStep.fromMap).toList(),
     );
   }
 
-  /// Insere a receita (sem id) ou atualiza (com id), junto com os itens.
-  /// Tudo na mesma transação: ou salva a receita inteira, ou nada.
+  /// Insere a receita (sem id) ou atualiza (com id), junto com os itens e as
+  /// etapas. Tudo na mesma transação: ou salva a receita inteira, ou nada.
   /// Retorna o id da receita.
   Future<int> save(Recipe recipe) async {
     validateRecipe(recipe);
@@ -74,17 +91,25 @@ class RecipeRepository {
           where: 'recipe_id = ?',
           whereArgs: [recipeId],
         );
+        await txn.delete(
+          'recipe_steps',
+          where: 'recipe_id = ?',
+          whereArgs: [recipeId],
+        );
       }
 
       for (final item in recipe.items) {
         await txn.insert('recipe_items', item.toMap(recipeId));
       }
+      for (final step in recipe.steps) {
+        await txn.insert('recipe_steps', step.toMap(recipeId));
+      }
       return recipeId;
     });
   }
 
-  /// Exclui a receita e seus itens (cascade). As produções já registradas
-  /// continuam no histórico, apenas sem o vínculo com a receita.
+  /// Exclui a receita e seus itens/etapas (cascade). As produções já
+  /// registradas continuam no histórico, apenas sem o vínculo com a receita.
   Future<void> delete(int id) async {
     final db = await _database;
     await db.delete('recipes', where: 'id = ?', whereArgs: [id]);
@@ -107,13 +132,6 @@ void validateRecipe(Recipe recipe) {
       recipe.yieldQuantity,
       'yieldQuantity',
       'O rendimento precisa ser maior que zero',
-    );
-  }
-  if (recipe.items.isEmpty) {
-    throw ArgumentError.value(
-      recipe.items,
-      'items',
-      'A receita precisa ter ao menos um ingrediente',
     );
   }
   final ids = recipe.items.map((item) => item.ingredientId).toSet();

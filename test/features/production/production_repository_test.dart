@@ -11,6 +11,9 @@ void main() {
   late Database db;
   late ProductionRepository repository;
   late Recipe syrup;
+  final now = DateTime.now();
+  final today = DateTime(now.year, now.month, now.day);
+  final yesterday = today.subtract(const Duration(days: 1));
 
   setUpAll(sqfliteFfiInit);
 
@@ -73,14 +76,100 @@ void main() {
       );
 
   test('salvar abate o estoque de cada ingrediente', () async {
-    await repository.save(
-      plan: await planFor(2500),
-      date: DateTime(2026, 10, 19),
-      unit: Unit.kg,
-    );
+    await repository.save(plan: await planFor(2500), date: today, unit: Unit.kg);
 
     expect(await stockOf('Morango'), 3500);
     expect(await stockOf('Açúcar'), 2000);
+  });
+
+  test('salvar com data retroativa não abate o estoque atual', () async {
+    final id = await repository.save(
+      plan: await planFor(2500),
+      date: yesterday,
+      unit: Unit.kg,
+    );
+
+    expect(await stockOf('Morango'), 5000);
+    expect(await stockOf('Açúcar'), 3000);
+    final production = (await repository.getHistory()).single;
+    expect(production.id, id);
+    expect(production.affectsStock, isFalse);
+    expect(production.items, hasLength(2));
+  });
+
+  test('excluir produção retroativa não altera o estoque', () async {
+    final id = await repository.save(
+      plan: await planFor(2500),
+      date: yesterday,
+      unit: Unit.kg,
+    );
+
+    await repository.delete(id);
+
+    expect(await stockOf('Morango'), 5000);
+    expect(await stockOf('Açúcar'), 3000);
+    expect(await repository.getHistory(), isEmpty);
+  });
+
+  test('editar recalcula o estoque com os novos dados', () async {
+    final id = await repository.save(
+      plan: await planFor(2500),
+      date: today,
+      unit: Unit.kg,
+    );
+    expect(await stockOf('Morango'), 3500);
+
+    await repository.update(
+      id: id,
+      plan: await planFor(1000),
+      date: today,
+      unit: Unit.kg,
+    );
+
+    expect(await stockOf('Morango'), 4400);
+    expect(await stockOf('Açúcar'), 2600);
+    final production = (await repository.getHistory()).single;
+    expect(production.quantity, 1000);
+  });
+
+  test('editar para uma data retroativa devolve o estoque e não abate mais', () async {
+    final id = await repository.save(
+      plan: await planFor(2500),
+      date: today,
+      unit: Unit.kg,
+    );
+
+    await repository.update(
+      id: id,
+      plan: await planFor(1000),
+      date: yesterday,
+      unit: Unit.kg,
+    );
+
+    expect(await stockOf('Morango'), 5000);
+    expect(await stockOf('Açúcar'), 3000);
+    final production = (await repository.getHistory()).single;
+    expect(production.affectsStock, isFalse);
+    expect(production.quantity, 1000);
+  });
+
+  test('editar uma produção retroativa para hoje passa a abater o estoque', () async {
+    final id = await repository.save(
+      plan: await planFor(2500),
+      date: yesterday,
+      unit: Unit.kg,
+    );
+    expect(await stockOf('Morango'), 5000);
+
+    await repository.update(
+      id: id,
+      plan: await planFor(1000),
+      date: today,
+      unit: Unit.kg,
+    );
+
+    expect(await stockOf('Morango'), 4400);
+    expect(await stockOf('Açúcar'), 2600);
   });
 
   test('salvar guarda a produção e o consumo no histórico', () async {
@@ -104,11 +193,7 @@ void main() {
   });
 
   test('salvar com falta deixa o estoque negativo', () async {
-    await repository.save(
-      plan: await planFor(10000),
-      date: DateTime(2026, 10, 19),
-      unit: Unit.kg,
-    );
+    await repository.save(plan: await planFor(10000), date: today, unit: Unit.kg);
 
     expect(await stockOf('Morango'), -1000);
     expect(await stockOf('Açúcar'), -1000);
@@ -117,7 +202,7 @@ void main() {
   test('excluir devolve o estoque e apaga o consumo', () async {
     final id = await repository.save(
       plan: await planFor(2500),
-      date: DateTime(2026, 10, 19),
+      date: today,
       unit: Unit.kg,
     );
 

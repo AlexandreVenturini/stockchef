@@ -81,4 +81,49 @@ void main() {
     expect(recipe.toMap().containsKey('items'), isFalse);
     expect(recipe.toMap().containsKey('id'), isFalse);
   });
+
+  test('recipeCost soma quantidade vezes preço por unidade base', () {
+    const recipe = Recipe(
+      name: 'Calda',
+      yieldQuantity: 1000,
+      yieldUnit: Unit.kg,
+      items: [
+        RecipeItem(ingredientId: 1, quantity: 600, unit: Unit.g),
+        RecipeItem(ingredientId: 2, quantity: 400, unit: Unit.g),
+      ],
+    );
+    final ingredientsById = {
+      1: const Ingredient(id: 1, name: 'Morango', unit: Unit.kg, price: 0.01),
+      2: const Ingredient(id: 2, name: 'Açúcar', unit: Unit.kg, price: 0.005),
+    };
+
+    expect(recipeCost(recipe, ingredientsById), closeTo(8.0, 0.0001));
+    expect(recipeCostIsPartial(recipe, ingredientsById), isFalse);
+  });
+
+  test('recipeCost ignora ingrediente sem preço e marca como parcial', () {
+    const recipe = Recipe(
+      name: 'Calda',
+      yieldQuantity: 1000,
+      yieldUnit: Unit.kg,
+      items: [
+        RecipeItem(ingredientId: 1, quantity: 600, unit: Unit.g),
+        RecipeItem(ingredientId: 2, quantity: 400, unit: Unit.g),
+      ],
+    );
+    final ingredientsById = {
+      1: const Ingredient(id: 1, name: 'Morango', unit: Unit.kg, price: 0.01),
+      2: const Ingredient(id: 2, name: 'Açúcar', unit: Unit.kg),
+    };
+
+    expect(recipeCost(recipe, ingredientsById), closeTo(6.0, 0.0001));
+    expect(recipeCostIsPartial(recipe, ingredientsById), isTrue);
+  });
+
+  test('recipeCost de receita sem ingredientes é zero e não é parcial', () {
+    const recipe = Recipe(name: 'Calda', yieldQuantity: 1000, yieldUnit: Unit.kg);
+
+    expect(recipeCost(recipe, const {}), 0);
+    expect(recipeCostIsPartial(recipe, const {}), isFalse);
+  });
 }

@@ -4,9 +4,13 @@ import '../../core/format.dart';
 import '../../core/theme.dart';
 import '../../core/widgets/empty_state.dart';
 import '../../core/widgets/search_field.dart';
+import '../ingredients/ingredient.dart';
 import 'recipe.dart';
+import 'recipe_detail_page.dart';
 import 'recipe_form_page.dart';
 import 'recipe_repository.dart';
+
+enum _SortKey { name, cost }
 
 class RecipesPage extends StatefulWidget {
   const RecipesPage({super.key});
@@ -17,8 +21,9 @@ class RecipesPage extends StatefulWidget {
 
 class _RecipesPageState extends State<RecipesPage> {
   final _repository = RecipeRepository();
-  late Future<(List<Recipe>, Map<int, String>)> _data;
+  late Future<(List<Recipe>, Map<int, Ingredient>)> _data;
   String _query = '';
+  _SortKey _sortKey = _SortKey.name;
 
   @override
   void initState() {
@@ -26,12 +31,15 @@ class _RecipesPageState extends State<RecipesPage> {
     _data = _load();
   }
 
-  Future<(List<Recipe>, Map<int, String>)> _load() async {
+  Future<(List<Recipe>, Map<int, Ingredient>)> _load() async {
     final recipes = await _repository.getAll();
     final ingredients = await _repository.getIngredients();
     return (
       recipes,
-      {for (final ingredient in ingredients) ingredient.id!: ingredient.name},
+      <int, Ingredient>{
+        for (final ingredient in ingredients)
+          if (ingredient.id != null) ingredient.id!: ingredient,
+      },
     );
   }
 
@@ -41,9 +49,16 @@ class _RecipesPageState extends State<RecipesPage> {
     });
   }
 
-  Future<void> _openForm([Recipe? recipe]) async {
+  Future<void> _openForm() async {
+    final changed = await Navigator.of(
+      context,
+    ).push<bool>(MaterialPageRoute(builder: (_) => const RecipeFormPage()));
+    if (changed == true) _reload();
+  }
+
+  Future<void> _openDetail(Recipe recipe) async {
     final changed = await Navigator.of(context).push<bool>(
-      MaterialPageRoute(builder: (_) => RecipeFormPage(recipe: recipe)),
+      MaterialPageRoute(builder: (_) => RecipeDetailPage(recipe: recipe)),
     );
     if (changed == true) _reload();
   }
@@ -54,6 +69,16 @@ class _RecipesPageState extends State<RecipesPage> {
       appBar: AppBar(
         title: const Text('Receitas'),
         actions: [
+          PopupMenuButton<_SortKey>(
+            tooltip: 'Ordenar',
+            icon: const Icon(Icons.sort),
+            initialValue: _sortKey,
+            onSelected: (key) => setState(() => _sortKey = key),
+            itemBuilder: (context) => const [
+              PopupMenuItem(value: _SortKey.name, child: Text('Nome')),
+              PopupMenuItem(value: _SortKey.cost, child: Text('Custo')),
+            ],
+          ),
           IconButton(
             tooltip: 'Nova receita',
             icon: const Icon(Icons.add),
@@ -61,7 +86,7 @@ class _RecipesPageState extends State<RecipesPage> {
           ),
         ],
       ),
-      body: FutureBuilder<(List<Recipe>, Map<int, String>)>(
+      body: FutureBuilder<(List<Recipe>, Map<int, Ingredient>)>(
         future: _data,
         builder: (context, snapshot) {
           if (snapshot.hasError) {
@@ -73,7 +98,7 @@ class _RecipesPageState extends State<RecipesPage> {
             return const Center(child: CircularProgressIndicator());
           }
 
-          final (allRecipes, names) = snapshot.data!;
+          final (allRecipes, ingredientsById) = snapshot.data!;
           final recipes = allRecipes
               .where((recipe) => !recipe.isPreparation)
               .toList();
@@ -91,6 +116,20 @@ class _RecipesPageState extends State<RecipesPage> {
           final filtered = recipes
               .where((recipe) => matchesSearch(recipe.name, _query))
               .toList();
+          switch (_sortKey) {
+            case _SortKey.name:
+              filtered.sort(
+                (a, b) => a.name.toLowerCase().compareTo(b.name.toLowerCase()),
+              );
+            case _SortKey.cost:
+              filtered.sort(
+                (a, b) => recipeCost(
+                  a,
+                  ingredientsById,
+                ).compareTo(recipeCost(b, ingredientsById)),
+              );
+          }
+
           return Column(
             children: [
               SearchField(
@@ -113,9 +152,15 @@ class _RecipesPageState extends State<RecipesPage> {
                               recipe: recipe,
                               ingredientNames: [
                                 for (final item in recipe.items)
-                                  names[item.ingredientId] ?? '',
+                                  ingredientsById[item.ingredientId]?.name ??
+                                      '',
                               ],
-                              onTap: () => _openForm(recipe),
+                              cost: recipeCost(recipe, ingredientsById),
+                              costIsPartial: recipeCostIsPartial(
+                                recipe,
+                                ingredientsById,
+                              ),
+                              onTap: () => _openDetail(recipe),
                             ),
                         ],
                       ),
@@ -132,11 +177,15 @@ class _RecipeCard extends StatelessWidget {
   const _RecipeCard({
     required this.recipe,
     required this.ingredientNames,
+    required this.cost,
+    required this.costIsPartial,
     required this.onTap,
   });
 
   final Recipe recipe;
   final List<String> ingredientNames;
+  final double cost;
+  final bool costIsPartial;
   final VoidCallback onTap;
 
   @override
@@ -186,7 +235,8 @@ class _RecipeCard extends StatelessWidget {
                     ),
                     const SizedBox(height: AppSpacing.sm),
                     Text(
-                      '$count ${count == 1 ? 'ingrediente' : 'ingredientes'}',
+                      '$count ${count == 1 ? 'ingrediente' : 'ingredientes'}'
+                      '${count == 0 ? '' : ' · Custo ${formatCurrency(cost)}${costIsPartial ? '*' : ''}'}',
                       style: textTheme.labelLarge?.copyWith(
                         color: AppColors.text,
                         fontWeight: FontWeight.w700,

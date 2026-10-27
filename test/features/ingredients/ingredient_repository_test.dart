@@ -32,6 +32,31 @@ void main() {
     },
   );
 
+  test(
+    'addStock com preço atualiza o preço por unidade base do ingrediente',
+    () async {
+      final id = await repository.save(
+        const Ingredient(name: 'Farinha', unit: Unit.kg, stock: 0),
+      );
+
+      await repository.addStock(id, 2, Unit.kg, totalPrice: 10);
+      expect((await repository.getAll()).single.price, closeTo(0.005, 1e-9));
+
+      await repository.addStock(id, 500, Unit.g, totalPrice: 2);
+      expect((await repository.getAll()).single.price, closeTo(0.004, 1e-9));
+    },
+  );
+
+  test('addStock sem preço não altera o preço já guardado', () async {
+    final id = await repository.save(
+      const Ingredient(name: 'Farinha', unit: Unit.kg, stock: 0, price: 0.01),
+    );
+
+    await repository.addStock(id, 1, Unit.kg);
+
+    expect((await repository.getAll()).single.price, 0.01);
+  });
+
   test('recusa compras inválidas e unidade incompatível', () async {
     final id = await repository.save(
       const Ingredient(name: 'Leite', unit: Unit.l),

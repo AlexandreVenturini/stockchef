@@ -20,6 +20,7 @@ class _IngredientFormPageState extends State<IngredientFormPage> {
   late final TextEditingController _brand;
   late final TextEditingController _stock;
   late final TextEditingController _minStock;
+  late final TextEditingController _price;
   late Unit _unit;
   bool _busy = false;
   String? _error;
@@ -37,6 +38,10 @@ class _IngredientFormPageState extends State<IngredientFormPage> {
     _minStock = TextEditingController(
       text: minStock == null ? '' : formatNumber(_unit.fromBase(minStock)),
     );
+    final price = item?.price;
+    _price = TextEditingController(
+      text: price == null ? '' : formatNumber(_unit.priceFromBase(price)),
+    );
   }
 
   @override
@@ -45,6 +50,7 @@ class _IngredientFormPageState extends State<IngredientFormPage> {
     _brand.dispose();
     _stock.dispose();
     _minStock.dispose();
+    _price.dispose();
     super.dispose();
   }
 
@@ -55,10 +61,25 @@ class _IngredientFormPageState extends State<IngredientFormPage> {
     return null;
   }
 
+  String? _validatePrice(String? text) {
+    if ((text ?? '').trim().isEmpty) return null;
+    final value = parseNumber(text!);
+    if (value == null || value < 0) return 'Informe um preço válido';
+    return null;
+  }
+
   void _convertField(TextEditingController controller, Unit from, Unit to) {
     final value = parseNumber(controller.text);
     if (value == null || !from.isCompatibleWith(to)) return;
     controller.text = formatNumber(to.fromBase(from.toBase(value)));
+  }
+
+  void _convertPriceField(TextEditingController controller, Unit from, Unit to) {
+    final value = parseNumber(controller.text);
+    if (value == null || !from.isCompatibleWith(to)) return;
+    controller.text = formatNumber(
+      to.priceFromBase(from.priceToBase(value)),
+    );
   }
 
   Future<void> _save() async {
@@ -71,6 +92,7 @@ class _IngredientFormPageState extends State<IngredientFormPage> {
       final old = widget.ingredient;
       final brand = _brand.text.trim();
       final minStock = parseNumber(_minStock.text);
+      final price = parseNumber(_price.text);
       await _repository.save(
         Ingredient(
           id: old?.id,
@@ -78,7 +100,7 @@ class _IngredientFormPageState extends State<IngredientFormPage> {
           unit: _unit,
           stock: _unit.toBase(parseNumber(_stock.text)!),
           minStock: minStock == null ? null : _unit.toBase(minStock),
-          price: old?.price,
+          price: price == null ? null : _unit.priceToBase(price),
           brand: brand.isEmpty ? null : brand,
           isPreparation: old?.isPreparation ?? false,
         ),
@@ -207,9 +229,25 @@ class _IngredientFormPageState extends State<IngredientFormPage> {
                                   setState(() {
                                     _convertField(_stock, _unit, unit);
                                     _convertField(_minStock, _unit, unit);
+                                    _convertPriceField(_price, _unit, unit);
                                     _unit = unit;
                                   });
                                 },
+                        ),
+                        const SizedBox(height: AppSpacing.md),
+                        TextFormField(
+                          controller: _price,
+                          enabled: !_busy,
+                          keyboardType: const TextInputType.numberWithOptions(
+                            decimal: true,
+                          ),
+                          decoration: InputDecoration(
+                            labelText: 'Preço por ${_unit.label} (opcional)',
+                            prefixIcon: const FieldIcon(
+                              Icons.attach_money_outlined,
+                            ),
+                          ),
+                          validator: _validatePrice,
                         ),
                       ],
                     ),

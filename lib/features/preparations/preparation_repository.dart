@@ -82,10 +82,18 @@ class PreparationRepository {
           where: 'recipe_id = ?',
           whereArgs: [recipeId],
         );
+        await txn.delete(
+          'recipe_steps',
+          where: 'recipe_id = ?',
+          whereArgs: [recipeId],
+        );
       }
 
       for (final item in recipe.items) {
         await txn.insert('recipe_items', item.toMap(recipeId));
+      }
+      for (final step in recipe.steps) {
+        await txn.insert('recipe_steps', step.toMap(recipeId));
       }
       return recipeId;
     });

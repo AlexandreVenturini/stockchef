@@ -13,6 +13,8 @@ import '../../helpers/test_database.dart';
 
 void main() {
   late Database db;
+  final now = DateTime.now();
+  final today = DateTime(now.year, now.month, now.day);
 
   setUp(() async {
     db = await openTestDatabase();
@@ -53,11 +55,7 @@ void main() {
       producedQuantity: 2500,
       ingredients: ingredients,
     );
-    await ProductionRepository().save(
-      plan: plan,
-      date: DateTime(2020, 10, 18),
-      unit: Unit.kg,
-    );
+    await ProductionRepository().save(plan: plan, date: today, unit: Unit.kg);
   });
 
   tearDown(() => closeTestDatabase(db));
@@ -75,7 +73,7 @@ void main() {
     );
     await pumpAndLoad(tester);
 
-    expect(find.text('18/10/2020'), findsOneWidget);
+    expect(find.text('Hoje'), findsOneWidget);
     expect(find.text('Calda de morango'), findsOneWidget);
     expect(find.text('2,5 kg'), findsOneWidget);
   });
@@ -108,5 +106,35 @@ void main() {
     expect(find.textContaining('Nenhuma produção registrada'), findsOneWidget);
     expect(await stockOf(tester, 'Morango'), 5000);
     expect(await stockOf(tester, 'Açúcar'), 3000);
+  });
+
+  testWidgets('editar a produção recalcula o estoque com a nova quantidade', (
+    tester,
+  ) async {
+    await tester.pumpWidget(
+      MaterialApp(theme: buildAppTheme(), home: const ProductionHistoryPage()),
+    );
+    await pumpAndLoad(tester);
+
+    await tester.tap(find.text('Calda de morango'));
+    await pumpAndLoad(tester);
+    expect(await stockOf(tester, 'Morango'), 3500);
+
+    await tester.tap(find.text('Editar'));
+    await pumpAndLoad(tester);
+    expect(find.text('Editar produção'), findsOneWidget);
+
+    await tester.enterText(
+      find.widgetWithText(TextFormField, 'Quantidade produzida'),
+      '1',
+    );
+    await pumpAndLoad(tester);
+    await tester.tap(find.text('Salvar alterações'));
+    await pumpAndLoad(tester);
+
+    expect(find.text('Calda de morango'), findsOneWidget);
+    expect(find.text('1 kg'), findsOneWidget);
+    expect(await stockOf(tester, 'Morango'), 4400);
+    expect(await stockOf(tester, 'Açúcar'), 2600);
   });
 }

@@ -6,14 +6,20 @@ import '../../core/widgets/item_card.dart';
 import '../../core/widgets/section_title.dart';
 import '../../core/widgets/stat_card.dart';
 import '../ingredients/ingredient.dart';
+import '../ingredients/ingredient_form_page.dart';
 import '../production/production.dart';
+import '../production/production_detail_page.dart';
 import '../production/production_form_page.dart';
 import '../production/production_repository.dart';
 import '../recipes/recipe.dart';
 import '../recipes/recipe_repository.dart';
 
 class DashboardPage extends StatefulWidget {
-  const DashboardPage({super.key});
+  const DashboardPage({super.key, this.onNavigateToTab});
+
+  /// Chamado quando o usuário toca em um atalho que leva para outra aba
+  /// da navegação principal (Ingredientes, Preparos, Receitas, Produção).
+  final ValueChanged<int>? onNavigateToTab;
 
   @override
   State<DashboardPage> createState() => _DashboardPageState();
@@ -71,6 +77,26 @@ class _DashboardPageState extends State<DashboardPage> {
       context,
     ).push<bool>(MaterialPageRoute(builder: (_) => const ProductionFormPage()));
     if (saved == true) _reload();
+  }
+
+  Future<void> _openProductionDetail(Production production) async {
+    final changed = await Navigator.of(context).push<bool>(
+      MaterialPageRoute(
+        builder: (_) => ProductionDetailPage(production: production),
+      ),
+    );
+    if (changed == true) _reload();
+  }
+
+  Future<void> _editIngredient(Ingredient item) async {
+    if (item.isPreparation) {
+      widget.onNavigateToTab?.call(2);
+      return;
+    }
+    final changed = await Navigator.of(context).push<bool>(
+      MaterialPageRoute(builder: (_) => IngredientFormPage(ingredient: item)),
+    );
+    if (changed == true) _reload();
   }
 
   @override
@@ -157,6 +183,7 @@ class _DashboardPageState extends State<DashboardPage> {
                         icon: Icons.inventory_2_outlined,
                         label: 'Ingredientes',
                         value: '$ingredientCount',
+                        onTap: () => widget.onNavigateToTab?.call(1),
                       ),
                     ),
                     Expanded(
@@ -165,6 +192,7 @@ class _DashboardPageState extends State<DashboardPage> {
                         label: 'Preparos',
                         value: '$preparationCount',
                         color: AppColors.navigationSelected,
+                        onTap: () => widget.onNavigateToTab?.call(2),
                       ),
                     ),
                   ],
@@ -177,6 +205,7 @@ class _DashboardPageState extends State<DashboardPage> {
                         label: 'Receitas',
                         value: '$recipeCount',
                         color: AppColors.quantity,
+                        onTap: () => widget.onNavigateToTab?.call(3),
                       ),
                     ),
                     Expanded(
@@ -185,6 +214,7 @@ class _DashboardPageState extends State<DashboardPage> {
                         label: 'Produções hoje',
                         value: '${today.length}',
                         color: AppColors.success,
+                        onTap: () => widget.onNavigateToTab?.call(4),
                       ),
                     ),
                   ],
@@ -197,13 +227,23 @@ class _DashboardPageState extends State<DashboardPage> {
             const _StatusLine('Tudo certo! Nada em falta')
           else
             for (final item in missing)
-              _StockCard(item: item, alert: true, badge: 'Sem estoque'),
+              _StockCard(
+                item: item,
+                alert: true,
+                badge: 'Sem estoque',
+                onTap: () => _editIngredient(item),
+              ),
           SectionTitle('Abaixo do mínimo', trailing: _countLabel(low.length)),
           if (low.isEmpty)
             const _StatusLine('Nada abaixo do mínimo')
           else
             for (final item in low)
-              _StockCard(item: item, alert: false, badge: 'Estoque baixo'),
+              _StockCard(
+                item: item,
+                alert: false,
+                badge: 'Estoque baixo',
+                onTap: () => _editIngredient(item),
+              ),
           SectionTitle(
             'Produções de hoje',
             trailing: today.isEmpty ? null : '${today.length}',
@@ -217,6 +257,7 @@ class _DashboardPageState extends State<DashboardPage> {
                 title: production.recipeName,
                 subtitle: formatTime(production.createdAt),
                 trailing: formatQuantity(production.quantity, production.unit),
+                onTap: () => _openProductionDetail(production),
               ),
         ],
       ),
@@ -274,11 +315,13 @@ class _StockCard extends StatelessWidget {
     required this.item,
     required this.alert,
     required this.badge,
+    this.onTap,
   });
 
   final Ingredient item;
   final bool alert;
   final String badge;
+  final VoidCallback? onTap;
 
   @override
   Widget build(BuildContext context) {
@@ -292,6 +335,7 @@ class _StockCard extends StatelessWidget {
       alert: alert,
       warning: !alert,
       badge: badge,
+      onTap: onTap,
     );
   }
 }

@@ -10,6 +10,7 @@ class Production {
     required this.quantity,
     required this.unit,
     required this.createdAt,
+    this.affectsStock = true,
     this.items = const [],
   });
 
@@ -20,6 +21,11 @@ class Production {
   final double quantity;
   final Unit unit;
   final DateTime createdAt;
+
+  /// Se esta produção alterou o estoque atual dos ingredientes. Produções
+  /// com data retroativa (anteriores a hoje) não abatem o estoque, pois
+  /// representam um registro histórico de algo já consumido antes do app.
+  final bool affectsStock;
   final List<ProductionItem> items;
 
   factory Production.fromMap(
@@ -34,6 +40,7 @@ class Production {
       quantity: (map['quantity'] as num).toDouble(),
       unit: Unit.values.byName(map['unit'] as String),
       createdAt: DateTime.parse(map['created_at'] as String),
+      affectsStock: (map['affects_stock'] as int? ?? 1) == 1,
       items: items,
     );
   }
@@ -47,9 +54,15 @@ class Production {
       'quantity': quantity,
       'unit': unit.name,
       'created_at': createdAt.toIso8601String(),
+      'affects_stock': affectsStock ? 1 : 0,
     };
   }
 }
+
+/// Produções de hoje abatem o estoque; produções com data retroativa são
+/// apenas um registro histórico e não alteram o estoque atual.
+bool productionAffectsStock(DateTime date) =>
+    toDateKey(date) == toDateKey(DateTime.now());
 
 class ProductionItem {
   const ProductionItem({

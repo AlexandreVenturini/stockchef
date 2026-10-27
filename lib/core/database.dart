@@ -11,7 +11,7 @@ class AppDatabase {
   AppDatabase._();
 
   static const fileName = 'stockchef.db';
-  static const version = 2;
+  static const version = 4;
 
   static Future<Database>? _opening;
 
@@ -65,10 +65,59 @@ class AppDatabase {
         'ADD COLUMN is_preparation INTEGER NOT NULL DEFAULT 0',
       );
     }
+    if (oldVersion < 3) {
+      await db.execute(
+        'ALTER TABLE productions '
+        'ADD COLUMN affects_stock INTEGER NOT NULL DEFAULT 1',
+      );
+      await db.execute(_shoppingListsTable);
+      await db.execute(_shoppingListItemsTable);
+    }
+    if (oldVersion < 4) {
+      await db.execute(
+        'ALTER TABLE recipes ADD COLUMN prep_time_minutes INTEGER',
+      );
+      await db.execute(
+        'ALTER TABLE shopping_list_items ADD COLUMN price_paid REAL',
+      );
+      await db.execute(_recipeStepsTable);
+    }
   }
 }
 
 final _units = Unit.values.map((unit) => "'${unit.name}'").join(', ');
+
+const _shoppingListsTable = '''
+  CREATE TABLE shopping_lists (
+    id INTEGER PRIMARY KEY,
+    created_at TEXT NOT NULL,
+    closed_at TEXT
+  )
+  ''';
+
+final _shoppingListItemsTable =
+    '''
+  CREATE TABLE shopping_list_items (
+    id INTEGER PRIMARY KEY,
+    list_id INTEGER NOT NULL REFERENCES shopping_lists (id) ON DELETE CASCADE,
+    ingredient_id INTEGER REFERENCES ingredients (id) ON DELETE SET NULL,
+    ingredient_name TEXT NOT NULL,
+    quantity REAL NOT NULL CHECK (quantity > 0),
+    unit TEXT NOT NULL CHECK (unit IN ($_units)),
+    checked INTEGER NOT NULL DEFAULT 0,
+    checked_at TEXT,
+    price_paid REAL
+  )
+  ''';
+
+const _recipeStepsTable = '''
+  CREATE TABLE recipe_steps (
+    id INTEGER PRIMARY KEY,
+    recipe_id INTEGER NOT NULL REFERENCES recipes (id) ON DELETE CASCADE,
+    position INTEGER NOT NULL,
+    description TEXT NOT NULL
+  )
+  ''';
 
 final _schema = [
   '''
@@ -89,7 +138,8 @@ final _schema = [
     name TEXT NOT NULL,
     yield_qty REAL NOT NULL CHECK (yield_qty > 0),
     yield_unit TEXT NOT NULL CHECK (yield_unit IN ($_units)),
-    output_ingredient_id INTEGER REFERENCES ingredients (id) ON DELETE SET NULL
+    output_ingredient_id INTEGER REFERENCES ingredients (id) ON DELETE SET NULL,
+    prep_time_minutes INTEGER
   )
   ''',
   '''
@@ -110,7 +160,8 @@ final _schema = [
     date TEXT NOT NULL,
     quantity REAL NOT NULL CHECK (quantity > 0),
     unit TEXT NOT NULL CHECK (unit IN ($_units)),
-    created_at TEXT NOT NULL
+    created_at TEXT NOT NULL,
+    affects_stock INTEGER NOT NULL DEFAULT 1
   )
   ''',
   '''
@@ -123,4 +174,7 @@ final _schema = [
     unit TEXT NOT NULL CHECK (unit IN ($_units))
   )
   ''',
+  _shoppingListsTable,
+  _shoppingListItemsTable,
+  _recipeStepsTable,
 ];

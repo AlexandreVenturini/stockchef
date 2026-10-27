@@ -45,9 +45,21 @@ class IngredientRepository {
     });
   }
 
-  Future<void> addStock(int id, double quantity, Unit unit) async {
+  /// Adiciona [quantity] ao estoque do ingrediente. Se [totalPrice] for
+  /// informado (preço total pago por essa quantidade), também atualiza o
+  /// preço por unidade do ingrediente — sempre vale o preço da compra mais
+  /// recente.
+  Future<void> addStock(
+    int id,
+    double quantity,
+    Unit unit, {
+    double? totalPrice,
+  }) async {
     if (!quantity.isFinite || quantity <= 0 || unit.toBase(quantity) <= 0) {
       throw ArgumentError('Informe uma quantidade maior que zero');
+    }
+    if (totalPrice != null && (!totalPrice.isFinite || totalPrice < 0)) {
+      throw ArgumentError('Informe um preço válido');
     }
     final db = await _database;
     await db.transaction((txn) async {
@@ -60,10 +72,19 @@ class IngredientRepository {
       if (!Ingredient.fromMap(rows.single).unit.isCompatibleWith(unit)) {
         throw ArgumentError('Unidade incompatível');
       }
+      final baseQuantity = unit.toBase(quantity);
       await txn.rawUpdate(
         'UPDATE ingredients SET stock = ROUND(stock + ?, 3) WHERE id = ?',
-        [unit.toBase(quantity), id],
+        [baseQuantity, id],
       );
+      if (totalPrice != null) {
+        await txn.update(
+          'ingredients',
+          {'price': totalPrice / baseQuantity},
+          where: 'id = ?',
+          whereArgs: [id],
+        );
+      }
     });
   }
 

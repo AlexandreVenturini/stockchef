@@ -17,6 +17,14 @@ enum Unit {
 
   double fromBase(double baseValue) => baseValue / factor;
 
+  /// Converte um preço "por unidade de exibição" (ex: R$/kg) para o preço
+  /// "por unidade base" (ex: R$/g) guardado no ingrediente.
+  double priceToBase(double pricePerUnit) => pricePerUnit / factor;
+
+  /// Converte o preço "por unidade base" guardado no ingrediente para o
+  /// preço "por unidade de exibição" (inverso de [priceToBase]).
+  double priceFromBase(double pricePerBaseUnit) => pricePerBaseUnit * factor;
+
   bool isCompatibleWith(Unit other) => family == other.family;
 
   List<Unit> get compatibleUnits =>

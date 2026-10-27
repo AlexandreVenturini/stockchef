@@ -118,7 +118,7 @@ void main() {
     expect(productions.single['recipe_name'], 'Calda de morango');
   });
 
-  test('não salva receita sem nome, sem rendimento ou sem itens', () async {
+  test('não salva receita sem nome ou sem rendimento', () async {
     final blankName = Recipe(
       name: '  ',
       yieldQuantity: 1000,
@@ -131,12 +131,69 @@ void main() {
       yieldUnit: Unit.kg,
       items: sauce().items,
     );
-    const noItems = Recipe(name: 'X', yieldQuantity: 1000, yieldUnit: Unit.kg);
 
     await expectLater(repository.save(blankName), throwsArgumentError);
     await expectLater(repository.save(noYield), throwsArgumentError);
-    await expectLater(repository.save(noItems), throwsArgumentError);
     expect(await repository.getAll(), isEmpty);
+  });
+
+  test('salva receita sem nenhum ingrediente', () async {
+    const noItems = Recipe(name: 'X', yieldQuantity: 1000, yieldUnit: Unit.kg);
+
+    final id = await repository.save(noItems);
+    final saved = await repository.getById(id);
+
+    expect(saved, isNotNull);
+    expect(saved!.items, isEmpty);
+  });
+
+  test('salva e lê de volta tempo de preparo e etapas, em ordem', () async {
+    final recipe = Recipe(
+      name: 'Calda de morango',
+      yieldQuantity: 1000,
+      yieldUnit: Unit.kg,
+      prepTimeMinutes: 45,
+      items: sauce().items,
+      steps: const [
+        RecipeStep(position: 0, description: 'Ferva a água'),
+        RecipeStep(position: 1, description: 'Adicione o morango'),
+      ],
+    );
+
+    final id = await repository.save(recipe);
+    final saved = await repository.getById(id);
+
+    expect(saved!.prepTimeMinutes, 45);
+    expect(saved.steps.map((s) => s.description), [
+      'Ferva a água',
+      'Adicione o morango',
+    ]);
+  });
+
+  test('atualizar substitui as etapas antigas pelas novas', () async {
+    final id = await repository.save(
+      Recipe(
+        name: 'Calda de morango',
+        yieldQuantity: 1000,
+        yieldUnit: Unit.kg,
+        items: sauce().items,
+        steps: const [RecipeStep(position: 0, description: 'Passo antigo')],
+      ),
+    );
+
+    await repository.save(
+      Recipe(
+        id: id,
+        name: 'Calda de morango',
+        yieldQuantity: 1000,
+        yieldUnit: Unit.kg,
+        items: sauce().items,
+        steps: const [RecipeStep(position: 0, description: 'Passo novo')],
+      ),
+    );
+
+    final updated = await repository.getById(id);
+    expect(updated!.steps.map((s) => s.description), ['Passo novo']);
   });
 
   test('não salva o mesmo ingrediente duas vezes na receita', () async {

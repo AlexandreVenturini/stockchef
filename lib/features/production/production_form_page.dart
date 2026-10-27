@@ -8,11 +8,16 @@ import '../../core/widgets/form_section.dart';
 import '../ingredients/ingredient.dart';
 import '../recipes/recipe.dart';
 import '../recipes/recipe_repository.dart';
+import 'production.dart';
 import 'production_calculator.dart';
 import 'production_repository.dart';
 
+/// Tela de registro e edição de produção.
+/// Sem [production] registra uma nova; com [production] edita a existente.
 class ProductionFormPage extends StatefulWidget {
-  const ProductionFormPage({super.key});
+  const ProductionFormPage({super.key, this.production});
+
+  final Production? production;
 
   @override
   State<ProductionFormPage> createState() => _ProductionFormPageState();
@@ -32,6 +37,8 @@ class _ProductionFormPageState extends State<ProductionFormPage> {
   DateTime _date = DateTime.now();
   bool _saving = false;
 
+  bool get _isEditing => widget.production != null;
+
   @override
   void initState() {
     super.initState();
@@ -41,6 +48,33 @@ class _ProductionFormPageState extends State<ProductionFormPage> {
   Future<void> _load() async {
     _recipes = await _recipeRepository.getAll();
     _ingredients = await _recipeRepository.getIngredients();
+
+    final production = widget.production;
+    if (production != null) {
+      _date = production.date;
+      _unit = production.unit;
+      _quantityController.text = _plainNumber(
+        production.unit.fromBase(production.quantity),
+      );
+      if (production.recipeId != null) {
+        for (final recipe in _recipes) {
+          if (recipe.id == production.recipeId) {
+            _recipe = recipe;
+            break;
+          }
+        }
+      }
+    }
+  }
+
+  /// Número para preencher um campo de texto: sem separador de milhar,
+  /// com vírgula decimal (formato que o `parseNumber` entende).
+  String _plainNumber(double value) {
+    final text = value.toStringAsFixed(3);
+    final trimmed = text.contains('.')
+        ? text.replaceFirst(RegExp(r'\.?0+$'), '')
+        : text;
+    return trimmed.replaceAll('.', ',');
   }
 
   @override
@@ -131,20 +165,38 @@ class _ProductionFormPageState extends State<ProductionFormPage> {
     if (!_formKey.currentState!.validate()) return;
     final plan = _plan;
     if (plan == null) return;
-    if (plan.hasShortage && !await _confirmShortage(plan)) return;
+    final willAffectStock = productionAffectsStock(_date);
+    if (plan.hasShortage && willAffectStock && !await _confirmShortage(plan)) {
+      return;
+    }
 
     setState(() {
       _saving = true;
     });
     try {
-      await _productionRepository.save(plan: plan, date: _date, unit: _unit);
+      if (_isEditing) {
+        await _productionRepository.update(
+          id: widget.production!.id!,
+          plan: plan,
+          date: _date,
+          unit: _unit,
+        );
+      } else {
+        await _productionRepository.save(plan: plan, date: _date, unit: _unit);
+      }
     } catch (_) {
       if (!mounted) return;
       setState(() {
         _saving = false;
       });
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Não foi possível registrar a produção')),
+        SnackBar(
+          content: Text(
+            _isEditing
+                ? 'Não foi possível salvar a produção'
+                : 'Não foi possível registrar a produção',
+          ),
+        ),
       );
       return;
     }
@@ -155,7 +207,9 @@ class _ProductionFormPageState extends State<ProductionFormPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('Nova produção')),
+      appBar: AppBar(
+        title: Text(_isEditing ? 'Editar produção' : 'Nova produção'),
+      ),
       body: FutureBuilder<void>(
         future: _loading,
         builder: (context, snapshot) {
@@ -218,6 +272,10 @@ class _ProductionFormPageState extends State<ProductionFormPage> {
                           ),
                         ),
                       ),
+                      if (!productionAffectsStock(_date)) ...[
+                        const SizedBox(height: AppSpacing.sm),
+                        _RetroactiveNote(date: _date),
+                      ],
                       const SizedBox(height: AppSpacing.md),
                       DropdownButtonFormField<int>(
                         initialValue: _recipe?.id,
@@ -339,7 +397,44 @@ class _ProductionFormPageState extends State<ProductionFormPage> {
                 style: FilledButton.styleFrom(
                   minimumSize: const Size.fromHeight(AppSizes.buttonHeight),
                 ),
-                child: const Text('Salvar produção'),
+                child: Text(
+                  _saving
+                      ? 'Aguarde...'
+                      : (_isEditing ? 'Salvar alterações' : 'Salvar produção'),
+                ),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _RetroactiveNote extends StatelessWidget {
+  const _RetroactiveNote({required this.date});
+
+  final DateTime date;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.all(AppSpacing.md - 4),
+      decoration: BoxDecoration(
+        color: AppColors.warningBackground,
+        borderRadius: BorderRadius.circular(AppRadius.md),
+      ),
+      child: Row(
+        children: [
+          const Icon(Icons.info_outline, color: AppColors.warning),
+          const SizedBox(width: AppSpacing.sm),
+          Expanded(
+            child: Text(
+              'Data retroativa (${formatDate(date)}): essa produção não vai '
+              'abater o estoque atual, fica só no histórico.',
+              style: const TextStyle(
+                color: AppColors.warning,
+                fontWeight: FontWeight.w600,
               ),
             ),
           ),

@@ -37,7 +37,7 @@ void main() {
     'created_at': '2026-10-19T10:00:00',
   });
 
-  test('cria as 5 tabelas', () async {
+  test('cria as 7 tabelas', () async {
     final rows = await db.query(
       'sqlite_master',
       columns: ['name'],
@@ -52,8 +52,36 @@ void main() {
         'recipe_items',
         'productions',
         'production_items',
+        'shopping_lists',
+        'shopping_list_items',
       ]),
     );
+  });
+
+  test('produção nasce abatendo o estoque por padrão', () async {
+    final recipe = await insertRecipe();
+    final id = await insertProduction(recipe);
+
+    final rows = await db.query('productions', where: 'id = ?', whereArgs: [id]);
+    expect(rows.single['affects_stock'], 1);
+  });
+
+  test('excluir lista de compras apaga os itens dela', () async {
+    final sugar = await insertIngredient('Açúcar');
+    final listId = await db.insert('shopping_lists', {
+      'created_at': '2026-10-19T10:00:00',
+    });
+    await db.insert('shopping_list_items', {
+      'list_id': listId,
+      'ingredient_id': sugar,
+      'ingredient_name': 'Açúcar',
+      'quantity': 1000,
+      'unit': 'kg',
+    });
+
+    await db.delete('shopping_lists', where: 'id = ?', whereArgs: [listId]);
+
+    expect(await db.query('shopping_list_items'), isEmpty);
   });
 
   test('não deixa excluir ingrediente usado em receita', () async {

@@ -14,6 +14,7 @@ class StockEntryDialog extends StatefulWidget {
 class _StockEntryDialogState extends State<StockEntryDialog> {
   final _form = GlobalKey<FormState>();
   final _quantity = TextEditingController();
+  final _price = TextEditingController();
   late Unit _unit;
   bool _busy = false;
   String? _error;
@@ -26,11 +27,13 @@ class _StockEntryDialogState extends State<StockEntryDialog> {
   @override
   void dispose() {
     _quantity.dispose();
+    _price.dispose();
     super.dispose();
   }
 
   Future<void> _save() async {
     if (!_form.currentState!.validate()) return;
+    final price = parseNumber(_price.text);
     setState(() {
       _busy = true;
       _error = null;
@@ -40,6 +43,7 @@ class _StockEntryDialogState extends State<StockEntryDialog> {
         widget.ingredient.id!,
         parseNumber(_quantity.text)!,
         _unit,
+        totalPrice: price,
       );
       if (mounted) Navigator.pop(context, true);
     } catch (_) {
@@ -98,6 +102,25 @@ class _StockEntryDialogState extends State<StockEntryDialog> {
                     : (unit) {
                         if (unit != null) setState(() => _unit = unit);
                       },
+              ),
+              const SizedBox(height: 16),
+              TextFormField(
+                controller: _price,
+                enabled: !_busy,
+                keyboardType: const TextInputType.numberWithOptions(
+                  decimal: true,
+                ),
+                decoration: const InputDecoration(
+                  labelText: 'Preço pago (opcional)',
+                  helperText: 'Atualiza o preço do ingrediente',
+                ),
+                validator: (text) {
+                  if ((text ?? '').trim().isEmpty) return null;
+                  final value = parseNumber(text!);
+                  return value == null || value < 0
+                      ? 'Informe um preço válido'
+                      : null;
+                },
               ),
               if (_error != null)
                 Text(

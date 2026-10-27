@@ -38,12 +38,14 @@ class HomePage extends StatefulWidget {
 class _HomePageState extends State<HomePage> {
   int _selectedIndex = 0;
 
-  static const _pages = [
-    DashboardPage(),
-    IngredientsPage(),
-    PreparationsPage(),
-    RecipesPage(),
-    ProductionHistoryPage(),
+  void _navigateToTab(int index) => setState(() => _selectedIndex = index);
+
+  List<Widget> get _pages => [
+    DashboardPage(onNavigateToTab: _navigateToTab),
+    const IngredientsPage(),
+    const PreparationsPage(),
+    const RecipesPage(),
+    const ProductionHistoryPage(),
   ];
 
   @override

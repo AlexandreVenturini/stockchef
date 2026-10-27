@@ -61,11 +61,11 @@ void main() {
     await pumpPage(tester);
 
     expect(find.text('Calda de morango'), findsOneWidget);
-    expect(find.text('2 ingredientes'), findsOneWidget);
+    expect(find.textContaining('2 ingredientes'), findsOneWidget);
     expect(find.text('Rende 1 kg'), findsOneWidget);
   });
 
-  testWidgets('sem ingredientes cadastrados o formulário avisa', (
+  testWidgets('sem ingredientes cadastrados ainda dá para criar a receita', (
     tester,
   ) async {
     await pumpPage(tester);
@@ -73,7 +73,8 @@ void main() {
     await tester.tap(find.byTooltip('Nova receita'));
     await pumpAndLoad(tester);
 
-    expect(find.textContaining('Cadastre ao menos um ingrediente'), findsOneWidget);
+    expect(find.text('Nome da receita'), findsOneWidget);
+    expect(find.text('Adicionar ingrediente'), findsOneWidget);
   });
 
   testWidgets('salvar o formulário vazio mostra os erros', (tester) async {
@@ -87,11 +88,29 @@ void main() {
 
     expect(find.text('Informe o nome da receita'), findsOneWidget);
     expect(find.text('Informe a quantidade'), findsOneWidget);
-    expect(find.text('Adicione ao menos um ingrediente'), findsOneWidget);
     expect(find.text('Nova receita'), findsWidgets);
   });
 
-  testWidgets('tocar na receita abre a edição com os dados preenchidos', (
+  testWidgets('salva receita sem nenhum ingrediente', (tester) async {
+    await pumpPage(tester);
+
+    await tester.tap(find.byTooltip('Nova receita'));
+    await pumpAndLoad(tester);
+    await tester.enterText(
+      find.widgetWithText(TextFormField, 'Nome da receita'),
+      'Água com gás',
+    );
+    await tester.enterText(
+      find.widgetWithText(TextFormField, 'Rendimento'),
+      '1',
+    );
+    await tester.tap(find.text('Salvar receita'));
+    await pumpAndLoad(tester);
+
+    expect(find.text('Água com gás'), findsOneWidget);
+  });
+
+  testWidgets('tocar na receita abre a tela de leitura, sem editar', (
     tester,
   ) async {
     await tester.runAsync(seedRecipe);
@@ -100,9 +119,36 @@ void main() {
     await tester.tap(find.text('Calda de morango'));
     await pumpAndLoad(tester);
 
+    expect(find.text('Calda de morango'), findsWidgets);
+    expect(find.text('Rendimento'), findsOneWidget);
+    expect(find.text('1 kg'), findsOneWidget);
+    expect(find.text('Morango'), findsOneWidget);
+    expect(find.text('Açúcar'), findsOneWidget);
+    expect(find.text('600 g'), findsOneWidget);
+    expect(find.text('400 g'), findsOneWidget);
+    expect(find.byTooltip('Editar receita'), findsOneWidget);
+    expect(find.text('Editar receita'), findsNothing);
+  });
+
+  testWidgets('botão editar na tela de leitura abre o formulário preenchido', (
+    tester,
+  ) async {
+    await tester.runAsync(seedRecipe);
+    await pumpPage(tester);
+
+    await tester.tap(find.text('Calda de morango'));
+    await pumpAndLoad(tester);
+    await tester.tap(find.byTooltip('Editar receita'));
+    await pumpAndLoad(tester);
+
     expect(find.text('Editar receita'), findsOneWidget);
     expect(find.text('Calda de morango'), findsOneWidget);
     expect(find.text('600'), findsOneWidget);
+    await tester.scrollUntilVisible(
+      find.text('400'),
+      200,
+      scrollable: find.byType(Scrollable).first,
+    );
     expect(find.text('400'), findsOneWidget);
     expect(find.byTooltip('Excluir receita'), findsOneWidget);
   });

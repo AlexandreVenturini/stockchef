@@ -5,6 +5,7 @@ import '../../core/theme.dart';
 import '../../core/widgets/item_card.dart';
 import '../../core/widgets/section_title.dart';
 import 'production.dart';
+import 'production_form_page.dart';
 import 'production_repository.dart';
 
 class ProductionDetailPage extends StatefulWidget {
@@ -19,6 +20,16 @@ class ProductionDetailPage extends StatefulWidget {
 class _ProductionDetailPageState extends State<ProductionDetailPage> {
   final _repository = ProductionRepository();
   bool _deleting = false;
+
+  Future<void> _edit() async {
+    final changed = await Navigator.of(context).push<bool>(
+      MaterialPageRoute(
+        builder: (_) => ProductionFormPage(production: widget.production),
+      ),
+    );
+    if (!mounted || changed != true) return;
+    Navigator.of(context).pop(true);
+  }
 
   Future<void> _confirmDelete() async {
     final confirmed = await showDialog<bool>(
@@ -66,6 +77,34 @@ class _ProductionDetailPageState extends State<ProductionDetailPage> {
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
             _SummaryCard(production: production),
+            if (!production.affectsStock)
+              Padding(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: AppSpacing.md,
+                ),
+                child: Container(
+                  padding: const EdgeInsets.all(AppSpacing.md - 4),
+                  decoration: BoxDecoration(
+                    color: AppColors.warningBackground,
+                    borderRadius: BorderRadius.circular(AppRadius.md),
+                  ),
+                  child: const Row(
+                    children: [
+                      Icon(Icons.info_outline, color: AppColors.warning),
+                      SizedBox(width: AppSpacing.sm),
+                      Expanded(
+                        child: Text(
+                          'Produção retroativa: não alterou o estoque atual.',
+                          style: TextStyle(
+                            color: AppColors.warning,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
             SectionTitle(
               'Ingredientes consumidos',
               trailing: consumed.length == 1
@@ -91,14 +130,35 @@ class _ProductionDetailPageState extends State<ProductionDetailPage> {
       bottomNavigationBar: SafeArea(
         child: Padding(
           padding: const EdgeInsets.all(AppSpacing.md),
-          child: OutlinedButton.icon(
-            onPressed: _deleting ? null : _confirmDelete,
-            icon: const Icon(Icons.delete_outline),
-            label: const Text('Excluir produção'),
-            style: OutlinedButton.styleFrom(
-              foregroundColor: theme.colorScheme.error,
-              minimumSize: const Size.fromHeight(AppSizes.buttonHeight),
-            ),
+          child: Row(
+            children: [
+              if (production.recipeId != null) ...[
+                Expanded(
+                  child: OutlinedButton.icon(
+                    onPressed: _deleting ? null : _edit,
+                    icon: const Icon(Icons.edit_outlined),
+                    label: const Text('Editar'),
+                    style: OutlinedButton.styleFrom(
+                      minimumSize: const Size.fromHeight(
+                        AppSizes.buttonHeight,
+                      ),
+                    ),
+                  ),
+                ),
+                const SizedBox(width: AppSpacing.sm),
+              ],
+              Expanded(
+                child: OutlinedButton.icon(
+                  onPressed: _deleting ? null : _confirmDelete,
+                  icon: const Icon(Icons.delete_outline),
+                  label: const Text('Excluir produção'),
+                  style: OutlinedButton.styleFrom(
+                    foregroundColor: theme.colorScheme.error,
+                    minimumSize: const Size.fromHeight(AppSizes.buttonHeight),
+                  ),
+                ),
+              ),
+            ],
           ),
         ),
       ),
